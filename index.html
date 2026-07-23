@@ -163,43 +163,11 @@ html,body{
   }
 }
 
-/* ── MOBILE RESPONSIVE ── */
-@media (max-width:600px){
-  #hdr{padding:8px 14px 6px}
-  #hdr h1{font-size:14px;letter-spacing:.1em}
-  #hdr .sub{display:none}
-  #hdr .badge{display:none}
-
-  #tabs{
-    padding:6px 10px;gap:5px;
-    /* horizontal scroll instead of wrap on small screens */
-    flex-wrap:nowrap;overflow-x:auto;
-    scrollbar-width:none;
-  }
-  #tabs::-webkit-scrollbar{display:none}
-  .tb{font-size:12px;padding:6px 10px;flex-shrink:0}
-
-  #bot{padding:8px 14px 20px;gap:8px}
-  .info .desc{font-size:13px}
-  .info .cnt{font-size:12px}
-  .btn-p{font-size:13px;padding:9px 18px}
-  .btn-s{font-size:13px;padding:8px 12px}
-
-  .lbl{font-size:9px;bottom:-16px}
-
-  #ph{padding:10px 14px}
-  #ph h2{font-size:14px}
-  #pb{padding:12px 14px;gap:10px}
-  .rc{padding:10px}
-  .rcn{font-size:14px}
-  .rcm{font-size:13px}
-}
-
 /* ── BOTTOM BAR ── */
 #bot{
   flex:0 0 auto;
   border-top:1px solid rgba(217,119,87,.12);
-  padding:10px 28px 28px;
+  padding:10px 28px 14px;
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
 .info .desc{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic}
@@ -270,6 +238,38 @@ html,body{
 .rcn{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--lt);font-weight:500;margin-bottom:5px}
 .rcr{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;margin-bottom:4px}
 .rcm{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);line-height:1.65}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width:600px){
+  #hdr{padding:8px 14px 6px}
+  #hdr h1{font-size:14px;letter-spacing:.1em}
+  #hdr .sub{display:none}
+  #hdr .badge{display:none}
+
+  #tabs{
+    padding:6px 10px;gap:5px;
+    /* horizontal scroll instead of wrap on small screens */
+    flex-wrap:nowrap;overflow-x:auto;
+    scrollbar-width:none;
+  }
+  #tabs::-webkit-scrollbar{display:none}
+  .tb{font-size:12px;padding:6px 10px;flex-shrink:0}
+
+  #bot{padding:8px 14px 10px;gap:8px}
+  .info .desc{font-size:13px}
+  .info .cnt{font-size:12px}
+  .btn-p{font-size:13px;padding:9px 18px}
+  .btn-s{font-size:13px;padding:8px 12px}
+
+  .lbl{font-size:9px;bottom:-16px}
+
+  #ph{padding:10px 14px}
+  #ph h2{font-size:14px}
+  #pb{padding:12px 14px;gap:10px}
+  .rc{padding:10px}
+  .rcn{font-size:14px}
+  .rcm{font-size:13px}
+}
 
 /* ── STAR BACKGROUND ── */
 #stars{position:absolute;inset:0;pointer-events:none;z-index:0}
