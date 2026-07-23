@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>The Anthropic Arcana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+}
+html,body{
+  width:100%;height:100%;
+  overflow:hidden;background:#0e0e0d;
+  font-family:'Noto Serif SC',serif;
+  position:fixed;
+  overscroll-behavior:none;
+}
+:root{
+  --or:#d97757;--bl:#6a9bcc;--gr:#788c5d;
+  --dk:#141413;--lt:#faf9f5;--md:#b0aea5;--dim:#5a5854;
+}
+
+
+#app{
+  display:flex;flex-direction:column;
+  width:100vw;height:100vh;
+  /* iPhone safe areas */
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  background:#141413;
+  overflow:hidden;
+}
+
+/* ── HEADER ── */
+#hdr{
+  flex:0 0 auto;
+  padding:14px 28px 11px;
+  border-bottom:1px solid rgba(217,119,87,.2);
+  display:flex;align-items:center;justify-content:space-between;
+}
+#hdr h1{
+  font-family:'Noto Serif SC',serif;font-size:18px;font-weight:500;
+  letter-spacing:.22em;color:var(--or);
+}
+#hdr .sub{
+  font-family:'Noto Serif SC',serif;font-style:italic;
+  font-size:15px;color:var(--md);margin-left:14px;
+}
+#hdr .badge{
+  font-family:'Noto Serif SC',serif;font-size:15px;
+  letter-spacing:.12em;color:var(--dim);
+}
+
+/* ── TABS ── */
+#tabs{
+  flex:0 0 auto;
+  display:flex;gap:6px;padding:9px 28px;
+  border-bottom:1px solid rgba(217,119,87,.12);
+  flex-wrap:wrap;
+  -webkit-overflow-scrolling:touch;
+}
+.tb{
+  font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:.09em;
+  color:var(--md);background:transparent;
+  border:1px solid rgba(176,174,165,.22);
+  padding:6px 14px;border-radius:4px;cursor:pointer;
+  white-space:nowrap;transition:all .18s;
+  touch-action:manipulation;
+  min-height:44px;
+}
+.tb:hover{color:#fff;border-color:rgba(217,119,87,.45)}
+.tb.on{color:var(--or);border-color:var(--or);background:rgba(217,119,87,.07)}
+
+/* ── STAGE: fills remaining space ── */
+#stage{
+  flex:1 1 0;  /* grow to fill, allow shrink, base 0 */
+  position:relative;
+  overflow:hidden;
+  min-height:0; /* crucial: lets flexbox shrink below content size */
+}
+#canvas{position:absolute;inset:0}
+
+#empty{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;pointer-events:none;
+}
+#empty .ic{font-size:36px;color:var(--or);opacity:.25}
+#empty p{
+  font-family:'Noto Serif SC',serif;font-size:15px;
+  color:var(--dim);letter-spacing:.16em;
+}
+
+/* ── CARD SLOTS ── */
+.slot{
+  position:absolute;transform-origin:center center;
+  cursor:default;
+  opacity:0;transition:opacity .32s ease;
+  z-index:1;
+}
+.slot.in{opacity:1}
+.slot.click{cursor:pointer}
+.slot.next-flip{cursor:pointer}
+.slot.next-flip .back{
+  border-radius:9px;
+  animation:pulse-glow 1.4s ease-in-out infinite;
+}
+@keyframes pulse-glow{
+  0%,100%{box-shadow:0 0 0 2px rgba(217,119,87,.85), 0 0 16px 4px rgba(217,119,87,.28)}
+  50%    {box-shadow:0 0 0 2px rgba(217,119,87,1),   0 0 28px 9px rgba(217,119,87,.48)}
+}
+.inner{
+  width:100%;height:100%;
+  transform-style:preserve-3d;
+  transition:transform .62s cubic-bezier(.23,1,.32,1);
+}
+.slot.flipped .inner{transform:rotateY(180deg)}
+.slot.zoomed .lbl{opacity:0}
+.face,.back{
+  position:absolute;inset:0;
+  backface-visibility:hidden;border-radius:9px;overflow:hidden;
+}
+.face{transform:rotateY(180deg)}
+.lbl{
+  position:absolute;bottom:-21px;left:50%;transform:translateX(-50%);
+  font-family:'Noto Serif SC',serif;font-size:15px;color:var(--dim);
+  letter-spacing:.07em;white-space:nowrap;
+  transition:opacity .2s;
+}
+
+
+/* ── CARD PREVIEW OVERLAY (hover) ── */
+#card-preview{
+  position:fixed;
+  pointer-events:none;
+  z-index:999;
+  opacity:0;
+  transition:opacity .18s ease;
+  filter:drop-shadow(0 12px 40px rgba(0,0,0,.85));
+}
+#card-preview.show{opacity:1}
+#card-preview svg{display:block;border-radius:12px}
+
+/* on touch devices the preview is centred and dismissable */
+@media (hover:none){
+  #card-preview{
+    pointer-events:auto;
+    left:50% !important;
+    top:50% !important;
+    transform:translate(-50%,-50%) !important;
+  }
+  #card-preview.show::after{
+    content:'';position:fixed;inset:0;z-index:-1;
+    background:rgba(0,0,0,.55);
+  }
+}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width:600px){
+  #hdr{padding:8px 14px 6px}
+  #hdr h1{font-size:14px;letter-spacing:.1em}
+  #hdr .sub{display:none}
+  #hdr .badge{display:none}
+
+  #tabs{
+    padding:6px 10px;gap:5px;
+    /* horizontal scroll instead of wrap on small screens */
+    flex-wrap:nowrap;overflow-x:auto;
+    scrollbar-width:none;
+  }
+  #tabs::-webkit-scrollbar{display:none}
+  .tb{font-size:12px;padding:6px 10px;flex-shrink:0}
+
+  #bot{padding:8px 14px 10px;gap:8px}
+  .info .desc{font-size:13px}
+  .info .cnt{font-size:12px}
+  .btn-p{font-size:13px;padding:9px 18px}
+  .btn-s{font-size:13px;padding:8px 12px}
+
+  .lbl{font-size:9px;bottom:-16px}
+
+  #ph{padding:10px 14px}
+  #ph h2{font-size:14px}
+  #pb{padding:12px 14px;gap:10px}
+  .rc{padding:10px}
+  .rcn{font-size:14px}
+  .rcm{font-size:13px}
+}
+
+/* ── BOTTOM BAR ── */
+#bot{
+  flex:0 0 auto;
+  border-top:1px solid rgba(217,119,87,.12);
+  padding:10px 28px 14px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.info .desc{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic}
+.info .cnt{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--dim);letter-spacing:.1em;margin-top:3px}
+.info{flex:1;min-width:140px}
+
+.btn-p{
+  font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:.15em;
+  color:#141413;background:var(--or);
+  border:none;padding:10px 28px;border-radius:4px;
+  cursor:pointer;white-space:nowrap;transition:background .18s,transform .12s;
+  touch-action:manipulation;
+  min-height:44px;
+}
+.btn-p:hover{background:#e8876a;transform:translateY(-1px)}
+.btn-p:active{transform:none}
+.btn-s{
+  font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:.1em;
+  background:transparent;border:1px solid rgba(176,174,165,.28);
+  padding:9px 16px;border-radius:4px;cursor:pointer;
+  white-space:nowrap;transition:all .18s;
+  touch-action:manipulation;
+  min-height:44px;
+}
+#rbtn{color:var(--gr);border-color:rgba(120,140,93,.38)}
+#rbtn:hover{border-color:var(--gr);color:#a0bb7d}
+#xbtn{color:var(--md)}
+#xbtn:hover{color:#fff}
+
+/* ── READING PANEL (overlay inside stage) ── */
+#panel{
+  display:none;position:absolute;inset:0;
+  background:rgba(20,20,19,.97);z-index:50;
+  flex-direction:column;overflow:hidden;
+}
+#panel.open{display:flex}
+#ph{
+  flex:0 0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;border-bottom:1px solid rgba(217,119,87,.25);
+}
+#ph h2{font-family:'Noto Serif SC',serif;font-size:15px;font-weight:500;color:var(--or);letter-spacing:.16em}
+#clo{
+  font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);
+  background:transparent;border:1px solid rgba(176,174,165,.25);
+  padding:6px 14px;border-radius:4px;cursor:pointer;letter-spacing:.1em;
+  transition:all .18s;
+}
+#clo:hover{color:#fff;border-color:var(--md)}
+#pb{flex:1 1 0;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:12px;min-height:0;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* scrollbar */
+#pb::-webkit-scrollbar{width:4px}
+#pb::-webkit-scrollbar-track{background:transparent}
+#pb::-webkit-scrollbar-thumb{background:rgba(217,119,87,.3);border-radius:2px}
+
+.rc{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px;border:1px solid rgba(217,119,87,.14);
+  border-radius:7px;background:rgba(217,119,87,.03);
+  transition:border-color .2s;
+}
+.rc.hi{border-color:rgba(217,119,87,.55);background:rgba(217,119,87,.06)}
+.rct{flex-shrink:0}
+.rcp{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--or);letter-spacing:.15em;margin-bottom:4px;text-transform:uppercase}
+.rcn{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--lt);font-weight:500;margin-bottom:5px}
+.rcr{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;margin-bottom:4px}
+.rcm{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);line-height:1.65}
+
+/* ── STAR BACKGROUND ── */
+#stars{position:absolute;inset:0;pointer-events:none;z-index:0}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="hdr">
+    <div style="display:flex;align-items:baseline">
+      <h1>TAROT</h1>
+      <span class="sub">78-card tarot simulator</span>
+    </div>
+    <span class="badge">78 CARDS</span>
+  </div>
+
+  <div id="tabs">
+    <button class="tb on" data-sp="single">单张  ONE CARD</button>
+    <button class="tb" data-sp="three">三牌阵  PAST · NOW · FUTURE</button>
+    <button class="tb" data-sp="cross">圣十字  CELTIC CROSS</button>
+    <button class="tb" data-sp="horseshoe">马蹄阵  HORSESHOE</button>
+    <button class="tb" data-sp="star">五芒星  PENTAGRAM</button>
+    <button class="tb" data-sp="relationship">关系阵  RELATIONSHIP</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="stars"></canvas>
+    <div id="canvas"></div>
+    <div id="empty">
+      <div class="ic">✦</div>
+      <p>选择牌阵，抽取命运之牌</p>
+    </div>
+    <div id="panel">
+      <div id="ph">
+        <h2>YOUR READING</h2>
+        <button id="clo">✦ 关闭</button>
+      </div>
+      <div id="pb"></div>
+    </div>
+  </div>
+
+  <div id="bot">
+    <div class="info">
+      <div class="desc" id="desc">专注当下，抽取你的命运之牌</div>
+      <div class="cnt" id="cnt">1 张牌 · 单张</div>
+    </div>
+    <button class="btn-p" id="dbtn">✦ 抽牌</button>
+    <button class="btn-p" id="fnbtn" style="display:none">翻开下一张 ✦</button>
+    <button class="btn-s" id="rbtn">解读 ✦</button>
+    <button class="btn-s" id="xbtn">重置</button>
+  </div>
+
+</div>
+<div id="card-preview"></div>
+<script>
+/* ── STARS ── */
+(function(){
+  const c=document.getElementById('stars');
+  const st=document.getElementById('stage');
+  function draw(){
+    const dpr = window.devicePixelRatio || 1;
+    const W = st.clientWidth, H = st.clientHeight;
+    c.width  = W * dpr;
+    c.height = H * dpr;
+    c.style.width  = W + 'px';
+    c.style.height = H + 'px';
+    const ctx = c.getContext('2d');
+    ctx.scale(dpr, dpr);
+    for(let i=0;i<120;i++){
+      const x=Math.random()*W, y=Math.random()*H;
+      const r=Math.random()*.9+.15;
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(250,249,245,${Math.random()*.18+.04})`;
+      ctx.fill();
+    }
+  }
+  draw();
+  new ResizeObserver(draw).observe(st);
+})();
+
+/* ── DATA ── */
+const SUITS={
+  wands:{c:'#d97757',el:'火 Fire'},
+  cups:{c:'#6a9bcc',el:'水 Water'},
+  swords:{c:'#b0aea5',el:'风 Air'},
+  pentacles:{c:'#788c5d',el:'土 Earth'}
+};
+const MAJ=[
+  {id:0,num:'0',name:'愚者',eng:'The Fool',m:'新的开始，天真无邪，自由精神，无限潜能。踏出第一步需要勇气，但宇宙会在你身后撑起网。',r:'鲁莽冲动，拒绝成长，忽视风险。或许你还没准备好，需要先在内心做足功课。'},
+  {id:1,num:'I',name:'魔法师',eng:'The Magician',m:'意志力，技能，专注，行动力。你拥有实现梦想所需的一切工具，是时候施展你的魔法了。',r:'操控，计划不周，未发挥的才能。能力在那里，但方向或动机需要重新审视。'},
+  {id:2,num:'II',name:'女祭司',eng:'The High Priestess',m:'直觉，神圣知识，潜意识，内在智慧。安静下来，你内心已知晓答案。',r:'秘密，与直觉脱节，压抑情感。外界噪音遮蔽了你的内在声音。'},
+  {id:3,num:'III',name:'女皇',eng:'The Empress',m:'丰盛，创造力，自然，养育，感官之美。这是播种与收获的时节。',r:'创意阻滞，依赖他人，失去与自然的联结。需要滋养自己。'},
+  {id:4,num:'IV',name:'皇帝',eng:'The Emperor',m:'权威，秩序，结构，稳定，父性力量。建立稳固的基础是成功的前提。',r:'独裁，过度控制，缺乏灵活。坚硬的结构可能成为囚笼。'},
+  {id:5,num:'V',name:'教皇',eng:'The Hierophant',m:'精神智慧，传统，信仰，制度，寻求引导。遵循被证实的道路往往有其深意。',r:'打破传统，个人信仰，质疑权威。你或许需要走一条属于自己的路。'},
+  {id:6,num:'VI',name:'恋人',eng:'The Lovers',m:'爱，和谐，关系，价值观对齐，重要抉择。真正的结合来自灵魂层面的共鸣。',r:'失调，不和谐，价值观冲突。在做出承诺之前，先审视内心的真实渴望。'},
+  {id:7,num:'VII',name:'战车',eng:'The Chariot',m:'控制，意志力，胜利，决心，方向。掌握内外两匹马，你将所向披靡。',r:'缺乏方向，自控力弱，内外矛盾。力量若无方向，可能带来混乱。'},
+  {id:8,num:'VIII',name:'力量',eng:'Strength',m:'勇气，耐心，内在力量，温柔的征服。真正的力量来自爱，而非恐惧。',r:'自我怀疑，能量低落，压抑本能。你的内在野性需要被温柔地接纳。'},
+  {id:9,num:'IX',name:'隐者',eng:'The Hermit',m:'内省，灵魂探寻，独处，内在引导。独处不是孤独，而是与自我深层对话。',r:'孤立，迷失方向，拒绝他人帮助。过度自我隔离可能让你错失珍贵的联结。'},
+  {id:10,num:'X',name:'命运之轮',eng:'Wheel of Fortune',m:'好运，业力，生命循环，命运转折点。万物皆在轮转，此刻的风正顺着你。',r:'厄运，抵制变化，打破循环。命运的轮轴在转动，需要主动适应而非抗拒。'},
+  {id:11,num:'XI',name:'正义',eng:'Justice',m:'公正，公平，真相，因果，律法。每一个选择都将带来相应的结果。',r:'不公，不诚实，逃避责任。内心已知晓真相，逃避只会延迟清算。'},
+  {id:12,num:'XII',name:'倒吊人',eng:'The Hanged Man',m:'暂停，臣服，放手，新视角，等待。换个角度，你将看见全新的世界。',r:'拖延，犹豫不决，抗拒放手。强行推进可能适得其反，学会臣服。'},
+  {id:13,num:'XIII',name:'死神',eng:'Death',m:'结束，转变，蜕变，过渡，新生。旧的必须死去，才能为新的腾出空间。',r:'抗拒变化，停滞不前，恐惧终结。你紧握的那些，或许正是阻碍你飞翔的重量。'},
+  {id:14,num:'XIV',name:'节制',eng:'Temperance',m:'平衡，节制，耐心，目的，中道。融合对立，你将找到流动的和谐。',r:'失衡，过度，需要重新调整。过犹不及，任何极端都会打破和谐。'},
+  {id:15,num:'XV',name:'恶魔',eng:'The Devil',m:'阴暗面，执念，束缚，欲望，物质主义。看见枷锁的那一刻，你已经自由了一半。',r:'解脱束缚，释放限制性信念，重获自由。链条比你想象的更容易打开。'},
+  {id:16,num:'XVI',name:'塔',eng:'The Tower',m:'突然变化，动荡，混乱，启示，觉醒。倒塌的是虚假，废墟上将生长出真实。',r:'内心动荡，恐惧变化，或已避免灾难。改变可以由内而发，不必等待外力摧毁。'},
+  {id:17,num:'XVII',name:'星星',eng:'The Star',m:'希望，信仰，灵感，更新，精神滋养。黑暗过后，星光指引你回家。',r:'缺乏信念，绝望，与灵魂脱节。希望仍在，但你暂时看不见它的光。'},
+  {id:18,num:'XVIII',name:'月亮',eng:'The Moon',m:'幻觉，恐惧，潜意识，直觉，模糊地带。在黑暗与光明之间，真相正悄悄显现。',r:'释放恐惧，压抑情绪，重获清晰。月亮渐圆，迷雾正在消散。'},
+  {id:19,num:'XIX',name:'太阳',eng:'The Sun',m:'积极，喜悦，活力，成功，温暖光芒。此刻的你正绽放如太阳，一切皆有可能。',r:'内心阴影遮蔽，暂时的消沉，过于乐观。即使在阴天，太阳也没有消失。'},
+  {id:20,num:'XX',name:'审判',eng:'Judgement',m:'审判，重生，内在召唤，宽恕，觉醒。号角响起，是时候以全新的自我站立。',r:'自我怀疑，忽视召唤，内心批判。你害怕的审判，可能正是通往自由的门。'},
+  {id:21,num:'XXI',name:'世界',eng:'The World',m:'完成，整合，成就，圆满，一个周期的完美终结。你已抵达，这一刻值得被庆祝。',r:'寻求终结，走捷径，延误。距离圆满只差最后一步，请不要在终点前放弃。'}
+];
+const RANKS=['Ace','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Page','Knight','Queen','King'];
+const RNMS=['A','II','III','IV','V','VI','VII','VIII','IX','X','Pg','Kn','Q','K'];
+const RNAMES_ZH=['一','二','三','四','五','六','七','八','九','十','侍从','骑士','王后','国王'];
+const SNAMES={wands:'权杖',cups:'圣杯',swords:'宝剑',pentacles:'金币'};
+const MM={
+  wands:{
+    Ace:'新的开始，灵感迸发，潜能无限。一个激动人心的项目正在向你召唤。',
+    Two:'规划未来，探索发现，权衡选择。站在十字路口，目光投向更远的地方。',
+    Three:'扩展，远见，海外机遇。你播下的种子已开始生根，更大的世界在等待。',
+    Four:'庆祝，喜悦，和谐，家园的温暖。这是值得停下来庆祝的时刻。',
+    Five:'冲突，竞争，意见相左。混战之中，也许没有真正的赢家，寻找合作的可能。',
+    Six:'成功，荣誉，进步。你的努力得到了认可，昂首接受这份荣耀。',
+    Seven:'挑战，坚持，你一人面对众多挑战。守住你的阵地，你比想象中更强大。',
+    Eight:'速度，行动，快速移动。事情正在加速推进，保持专注与灵活。',
+    Nine:'韧性，坚守最后防线，疲惫中的勇气。你已走了很远，再坚持一下。',
+    Ten:'重担，额外责任，压力山大。你承载太多，学会放下或寻求帮助。',
+    Page:'热情，探索，新鲜想法初露锋芒。对世界充满好奇，勇敢迈出第一步。',
+    Knight:'能量，激情，果敢行动。像箭一样射向目标，但记得偶尔检查方向。',
+    Queen:'自信，独立，魅力四射。你的热情感染周围的一切，勇于表达自我。',
+    King:'天生领袖，远见卓识，企业家精神。你的愿景能点燃他人，带领众人前行。'
+  },
+  cups:{
+    Ace:'新感情，直觉开启，爱的杯子溢满。心扉大开，接纳一切美好涌入。',
+    Two:'结合，伙伴关系，相互吸引。两颗心走向彼此，这是真实的联结。',
+    Three:'庆祝，友谊，创意欢腾，共同的喜悦。与你爱的人一起举杯，感恩此刻。',
+    Four:'沉思，冷漠，需要反思。你沉浸其中，也许错过了眼前伸出的礼物。',
+    Five:'遗憾，失望，将注意力放在溢出的而非留存的。转身看看，仍有完整的杯子。',
+    Six:'怀旧，重逢，回顾过去的温柔时光。过去的善意正以某种方式回归。',
+    Seven:'幻想，错觉，诱惑众多，方向迷失。美丽的泡沫需要清醒的眼睛分辨。',
+    Eight:'放弃，离开，追求更深层的意义。有些东西即使完整，也不是你真正想要的。',
+    Nine:'满足，感恩，愿望成真。你的心愿正在或即将实现，好好享受这份丰盛。',
+    Ten:'圆满之爱，幸福关系，彩虹尽头的家园。这是情感上的完美归宿。',
+    Page:'创意机遇，浪漫气息，以孩童之心感受世界。让感受流动，不要评判。',
+    Knight:'浪漫，魅力，充满想象力的追求。感情丰富，但记得将梦想落地。',
+    Queen:'慈悲，关怀，情感安全感。你的温柔是力量，而非软弱。',
+    King:'情感平衡，慈悲心，外交智慧。在喧嚣中保持内心的平静是真正的修行。'
+  },
+  swords:{
+    Ace:'突破，新想法如剑刃般清晰。真相已经显现，用它切开迷雾。',
+    Two:'艰难抉择，蒙眼的平衡。你已知晓答案，只是还没勇气面对。',
+    Three:'心碎，情感痛苦，悲伤穿透。痛苦是真实的，但它也会过去，给自己哭泣的权利。',
+    Four:'休息，放松，沉思，恢复力量。战士需要休息，停下来不是懦弱。',
+    Five:'冲突，失败，不惜代价取胜的代价。赢了战役，却可能失去更重要的东西。',
+    Six:'过渡，变化，乘船离开动荡的水域。你正在移向更平静的地方。',
+    Seven:'背叛，欺骗，暗中的策略。有些事情不是表面看起来的样子，保持清醒。',
+    Eight:'被困，自我设限，蒙眼的囚徒。枷锁没有你想象的那么牢固，试着走一步。',
+    Nine:'焦虑，深夜的担忧，灾难化思维。那些折磨你的恐惧，大多数不会成真。',
+    Ten:'痛苦的终结，深重创伤，但也是黑暗的绝对低谷。最坏的时刻已经过去。',
+    Page:'新想法，好奇心旺盛，求知若渴。用清晰的思维探索世界，不被偏见束缚。',
+    Knight:'雄心勃勃，果断行动，直接沟通。你的速度是优势，但注意不要忽略细节。',
+    Queen:'洞察力强，清晰独立，坚定的界限。你的智慧来自经历，无需为此道歉。',
+    King:'思维清晰，智识权威，公正的决断。以理性和公平引导他人是你的天赋。'
+  },
+  pentacles:{
+    Ace:'新的财务机遇，显化能量，丰盛之门开启。将想法落实为有形的行动。',
+    Two:'多重优先，时间管理，在变化中保持平衡。生活的杂技需要专注与灵活。',
+    Three:'团队合作，精湛技艺，共同建造。卓越的作品来自合作与精益求精。',
+    Four:'保守，节俭，抓紧安全感。保护资源是智慧，但过度执着可能阻碍流动。',
+    Five:'财务损失，匮乏感，在寒冷中寻找庇护。帮助近在咫尺，学会求助。',
+    Six:'给予与接受，慷慨流动，平衡的能量交换。财富在流动中才有意义。',
+    Seven:'长远眼光，耐心等待收获。你种下的种子正在生长，坚持照料。',
+    Eight:'学徒精神，勤奋专注，通过努力走向精通。工匠的道路需要时间。',
+    Nine:'丰盛，奢华，自给自足的满足感。你已建立了属于自己的美丽花园。',
+    Ten:'财富，家族遗产，长远安全，代代相传的礼物。物质的稳定使灵魂得以飞翔。',
+    Page:'显化机遇，技能发展，踏实的新开始。将梦想化为计划，将计划化为行动。',
+    Knight:'效率，可靠，稳步前进。你不是最快的，但你是最值得信赖的。',
+    Queen:'务实，养育，脚踏实地的丰盛。你用双手创造美好，这是真实的魔法。',
+    King:'丰盛，商业头脑，安全感与慷慨并存的领导力。财富在你手中生长，又通过你流向世界。'
+  }
+};
+
+// Build deck
+const DECK=[];
+const MR={
+  wands:{
+    Ace:'灵感受阻，新项目延误，内在的火焰暂时熄灭。',
+    Two:'犹豫不决，计划停滞，对未来感到迷茫。',
+    Three:'扩展受挫，期待落空，视野被局限。',
+    Four:'家庭不和，庆祝被推迟，根基不稳。',
+    Five:'避免冲突，内心的争斗，压抑的竞争心。',
+    Six:'自我怀疑，荣誉推迟，过度依赖他人认可。',
+    Seven:'退缩，被压倒，放弃本可坚守的阵地。',
+    Eight:'延误，信息混乱，仓促行事后悔。',
+    Nine:'偏执，防御过度，难以相信一切已安全。',
+    Ten:'放下重担，拒绝承担，或终于卸下压力。',
+    Page:'创意受阻，消息延误，热情难以落地。',
+    Knight:'冲动莽撞，虎头蛇尾，能量分散。',
+    Queen:'依赖他人，嫉妒心起，失去内在热情。',
+    King:'专制独断，愿景模糊，失去领导力。'},
+  cups:{
+    Ace:'情感封闭，压抑感受，爱的流动受阻。',
+    Two:'失衡的关系，误解，联结断裂。',
+    Three:'孤立，友情破裂，庆祝背后的空虚。',
+    Four:'错过机会，沉溺其中，无法走出舒适圈。',
+    Five:'放下遗憾，接受损失，转向留存的美好。',
+    Six:'无法释怀过去，对往昔的不健康执念。',
+    Seven:'从幻象中清醒，做出实际选择。',
+    Eight:'不敢离开，害怕改变，停留在不满足的地方。',
+    Nine:'物质主义，自满，愿望背后的空洞。',
+    Ten:'表面和谐，内心失衡，关系中的裂缝。',
+    Page:'情绪化，多愁善感，创意灵感枯竭。',
+    Knight:'情绪波动，承诺未能兑现，理想主义破碎。',
+    Queen:'依赖他人，情绪边界模糊，失去自我。',
+    King:'情绪压抑，操控，失去内心平静。'},
+  swords:{
+    Ace:'思维混乱，真相被掩盖，决断力丧失。',
+    Two:'信息过载，回避困难的真相。',
+    Three:'从痛苦中复原，悲伤正在愈合。',
+    Four:'不安躁动，强迫自己行动，需要更多休息。',
+    Five:'和解，停止争斗，承认失败反而解脱。',
+    Six:'抗拒改变，带着问题前行，无法真正离开。',
+    Seven:'良心发现，秘密暴露，不诚实被揭穿。',
+    Eight:'逃脱束缚，打破自我设限，找到出口。',
+    Nine:'走出噩梦，恐惧开始消散，寻求帮助。',
+    Ten:'拒绝接受结束，或从最低谷缓慢复苏。',
+    Page:'言语轻率，谣言，信息不实。',
+    Knight:'鲁莽冲动，言辞伤人，行动缺乏考量。',
+    Queen:'过度批判，冷漠，用智识掩盖情感。',
+    King:'滥用权力，不公正的判断，冷酷无情。'},
+  pentacles:{
+    Ace:'机遇错失，计划停滞，物质基础不稳。',
+    Two:'失衡，顾此失彼，优先级混乱。',
+    Three:'团队不合，粗心的工作，缺乏协作。',
+    Four:'贪婪，过度囤积，因恐惧而紧握不放。',
+    Five:'走出困境，接受帮助，匮乏感开始消散。',
+    Six:'慷慨失衡，附带条件的给予，或接受施舍。',
+    Seven:'缺乏耐心，急于求成，看不见长远的回报。',
+    Eight:'粗制滥造，缺乏专注，学习停滞。',
+    Nine:'物质依赖，过度消费，忽视内在丰盛。',
+    Ten:'家族矛盾，财富纠纷，遗产问题。',
+    Page:'计划不周，缺乏专注，机会被浪费。',
+    Knight:'停滞不前，过于保守，固执己见。',
+    Queen:'失去平衡，对家庭过度牺牲，忽视自我。',
+    King:'财务判断失误，物质主义，安全感的执念。'}
+};
+
+MAJ.forEach(c=>DECK.push({...c,suit:'major',type:'major'}));
+Object.keys(SUITS).forEach((suit,si)=>{
+  RANKS.forEach((rank,i)=>{
+    DECK.push({
+      id:22+si*14+i,
+      name:`${RNAMES_ZH[i]}·${SNAMES[suit]}`,
+      eng:`${rank} of ${suit.charAt(0).toUpperCase()+suit.slice(1)}`,
+      num:RNMS[i],suit,type:'minor',rank,
+      m:(MM[suit]||{})[rank]||'',
+      r:(MR[suit]||{})[rank]||''
+    });
+  });
+});
+
+// Spreads — positions in grid units, centred at (0,0)
+const SPREADS={
+  single:{desc:'专注当下，抽取你的命运之牌',cnt:1,label:'单张',
+    pos:[{l:'Your Message',x:0,y:0,r:0}]},
+  three:{desc:'三牌阵揭示时间之流中的你',cnt:3,label:'三牌阵',
+    pos:[{l:'过去',x:-1,y:0,r:0},{l:'现在',x:0,y:0,r:0},{l:'未来',x:1,y:0,r:0}]},
+  cross:{desc:'凯尔特十字，最深邃的十张牌阵',cnt:10,label:'圣十字',
+    pos:[
+      {l:'当下',x:0,y:0,r:0},{l:'挑战',x:0,y:0,r:90},
+      {l:'过去',x:-1,y:0,r:0},{l:'未来',x:1,y:0,r:0},
+      {l:'上方',x:0,y:-1,r:0},{l:'下方',x:0,y:1,r:0},
+      {l:'结果',x:2.4,y:-1.5,r:0},{l:'希望',x:2.4,y:-.5,r:0},
+      {l:'外部',x:2.4,y:.5,r:0},{l:'建议',x:2.4,y:1.5,r:0}
+    ]},
+  horseshoe:{desc:'马蹄阵七张，分析完整情境',cnt:7,label:'马蹄阵',
+    pos:[
+      {l:'过去',x:-1.8,y:.55,r:0},{l:'现在',x:-1.2,y:.1,r:0},
+      {l:'隐藏',x:-.6,y:-.28,r:0},{l:'指引',x:0,y:-.45,r:0},
+      {l:'外部',x:.6,y:-.28,r:0},{l:'行动',x:1.2,y:.1,r:0},
+      {l:'结果',x:1.8,y:.55,r:0}
+    ]},
+  star:{desc:'五芒星阵，五大元素的指引',cnt:5,label:'五芒星',
+    pos:[
+      {l:'灵 Spirit',x:0,y:-1.25,r:0},{l:'火 Fire',x:1.18,y:-.38,r:0},
+      {l:'土 Earth',x:.73,y:1.02,r:0},{l:'水 Water',x:-.73,y:1.02,r:0},
+      {l:'风 Air',x:-1.18,y:-.38,r:0}
+    ]},
+  relationship:{desc:'关系阵，洞察两人之间的能量',cnt:6,label:'关系阵',
+    pos:[
+      {l:'你',x:-1.5,y:-.5,r:0},{l:'Ta',x:1.5,y:-.5,r:0},
+      {l:'连结',x:0,y:-.5,r:0},{l:'挑战',x:0,y:.65,r:0},
+      {l:'过去',x:-1.5,y:.65,r:0},{l:'未来',x:1.5,y:.65,r:0}
+    ]}
+};
+
+let curSp='single', drawn=[], flippedCount=0;
+
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+
+// ── Image filename mapping ──
+function cardFilename(card){
+  if(card === 'back') return 'tarot_cards/back.png';
+  const suitMap = {wands:'wa', cups:'cu', swords:'sw', pentacles:'pe'};
+  if(card.type === 'major'){
+    return `tarot_cards/ar${String(card.id).padStart(2,'0')}.png`;
+  } else {
+    const prefix = suitMap[card.suit];
+    const n = RANKS.indexOf(card.rank) + 1;
+    return `tarot_cards/${prefix}${String(n).padStart(2,'0')}.png`;
+  }
+}
+
+// ── Card renderers (PNG image) ──
+function backSVG(w,h){
+  return `<img src="tarot_cards/back.png" style="width:${w}px;height:${h}px;display:block;border-radius:8px;object-fit:cover">`;
+}
+
+function faceSVG(card,w,h){
+  const src = cardFilename(card);
+  const rotate = card._rv ? 'transform:rotate(180deg);' : '';
+  return `<img src="${src}" style="width:${w}px;height:${h}px;display:block;border-radius:8px;object-fit:cover;${rotate}">`;
+}
+
+// ── Layout engine ──
+function cardSizeForSpread(stW, stH, positions){
+  const xs=positions.map(p=>p.x), ys=positions.map(p=>p.y);
+  const spanX=(Math.max(...xs)-Math.min(...xs))||0;
+  const spanY=(Math.max(...ys)-Math.min(...ys))||0;
+  const margin=0.88;
+  // available area per card slot
+  const byW = stW*margin / (spanX + 1.6);
+  const byH = stH*margin / (spanY + 1.6);
+  // card ratio h/w = 1.75
+  const fromW = byW;
+  const fromH = byH / 1.75;
+  const w = Math.floor(Math.min(fromW, fromH, 130));
+  const h = Math.floor(w * 1.75);
+  return { w: Math.max(w, 52), h: Math.max(h, 91) };
+}
+
+function refreshZIndex(){
+  const canvas = document.getElementById('canvas');
+  if(!canvas) return;
+  canvas.querySelectorAll('.slot').forEach((sl,i)=>{
+    if(sl.classList.contains('flipped')){
+      sl.style.zIndex = 2;
+    } else if(i === flippedCount){
+      sl.style.zIndex = 10;
+    } else {
+      sl.style.zIndex = 1;
+    }
+  });
+}
+
+function render(){
+  const canvas = document.getElementById('canvas');
+  const empty  = document.getElementById('empty');
+  canvas.innerHTML = '';
+  document.getElementById('card-preview').classList.remove('show');
+  if(!drawn.length){
+    empty.style.display='flex';
+    document.getElementById('dbtn').style.display = '';
+    document.getElementById('fnbtn').style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  // restore button state on resize
+  document.getElementById('dbtn').style.display = 'none';
+  document.getElementById('fnbtn').style.display = '';
+
+  const sp   = SPREADS[curSp];
+  const stW  = canvas.offsetWidth;
+  const stH  = canvas.offsetHeight;
+  let {w,h} = cardSizeForSpread(stW, stH, sp.pos);
+  // single and three spreads: double the card size
+  if(curSp === 'single' || curSp === 'three'){
+    const maxW = Math.floor(stW * 0.88 / (sp.pos.length === 1 ? 1 : 3));
+    const maxH = Math.floor(stH * 0.82);
+    const maxByRatio = Math.floor(maxH / 1.75);
+    const doubled = Math.min(w * 2, maxW, maxByRatio, 260);
+    w = doubled;
+    h = Math.floor(w * 1.75);
+  }
+
+  const xs   = sp.pos.map(p=>p.x), ys = sp.pos.map(p=>p.y);
+  const midX = (Math.min(...xs)+Math.max(...xs))/2;
+  const midY = (Math.min(...ys)+Math.max(...ys))/2;
+  const cx   = stW/2, cy = stH/2;
+  const stepX = w  * 1.2;
+  const stepY = h  * 1.18;
+
+  let nextFlip = flippedCount; // restore after resize
+
+  sp.pos.forEach((p,i)=>{
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (drawn[i] && drawn[i]._rv ? ' rv' : '');
+    const left = cx + (p.x - midX)*stepX - w/2;
+    const top  = cy + (p.y - midY)*stepY - h/2;
+    slot.style.cssText = `left:${left}px;top:${top}px;width:${w}px;height:${h}px;${p.r?`transform:rotate(${p.r}deg)`:''}`;
+
+    const inner = document.createElement('div'); inner.className='inner';
+    const back  = document.createElement('div'); back.className='back';  back.innerHTML=backSVG(w,h);
+    const face  = document.createElement('div'); face.className='face';
+    if(drawn[i]) face.innerHTML = faceSVG(drawn[i], w, h);
+    inner.append(back, face);
+
+    const lbl = document.createElement('div'); lbl.className='lbl'; lbl.textContent=p.l;
+    slot.append(inner, lbl);
+    slot.dataset.i = i;
+
+    // ── Preview: mouse hover on desktop, tap-to-preview on touch ──
+    const isTouchDevice = () => window.matchMedia('(hover:none)').matches;
+
+    function showPreview(card, clientX, clientY){
+      const preview = document.getElementById('card-preview');
+      const PW = 320, PH = 560;
+      preview.innerHTML = faceSVG(card, PW, PH);
+      if(!isTouchDevice()){
+        preview.style.transform = '';
+        const margin = 16;
+        let px = clientX + margin;
+        let py = clientY - PH / 2;
+        if(px + PW > window.innerWidth - margin) px = clientX - PW - margin;
+        py = Math.max(margin, Math.min(py, window.innerHeight - PH - margin));
+        preview.style.left = px + 'px';
+        preview.style.top  = py + 'px';
+      } else {
+        preview.style.transform = '';
+        preview.style.left = '';
+        preview.style.top  = '';
+      }
+      preview.classList.add('show');
+    }
+
+    // Desktop: mouseenter/move/leave
+    slot.addEventListener('mouseenter', e => {
+      if(isTouchDevice()) return;
+      if(!slot.classList.contains('flipped')) return;
+      const card = drawn[+slot.dataset.i];
+      if(card) showPreview(card, e.clientX, e.clientY);
+    });
+    slot.addEventListener('mousemove', e => {
+      if(isTouchDevice()) return;
+      const preview = document.getElementById('card-preview');
+      if(!preview.classList.contains('show')) return;
+      const PW=160, PH=280, margin=16;
+      let px = e.clientX + margin;
+      let py = e.clientY - PH / 2;
+      if(px + PW > window.innerWidth - margin) px = e.clientX - PW - margin;
+      py = Math.max(margin, Math.min(py, window.innerHeight - PH - margin));
+      preview.style.left = px + 'px';
+      preview.style.top  = py + 'px';
+    });
+    slot.addEventListener('mouseleave', () => {
+      if(isTouchDevice()) return;
+      document.getElementById('card-preview').classList.remove('show');
+    });
+
+    canvas.appendChild(slot);
+
+    // staggered deal animation — face down, but restore already-flipped cards
+    requestAnimationFrame(()=>{
+      setTimeout(()=>{
+        slot.classList.add('in');
+        // restore previously flipped state
+        if(i < flippedCount){
+          slot.classList.add('flipped','click');
+        }
+        // after all cards dealt, highlight the next one (if any remain)
+        if(i === sp.pos.length-1){
+          if(flippedCount >= sp.pos.length){
+          } else {
+            setTimeout(()=>{ highlightNext(); refreshZIndex(); }, 200);
+          }
+        }
+      }, i*130 + 30);
+    });
+  });
+
+  function highlightNext(){
+    canvas.querySelectorAll('.slot').forEach(s=>s.classList.remove('next-flip'));
+    if(nextFlip < sp.pos.length){
+      canvas.querySelectorAll('.slot')[nextFlip].classList.add('next-flip');
+    }
+  }
+
+  function updateFlipBtn(){
+    const fnbtn = document.getElementById('fnbtn');
+    const remaining = sp.pos.length - nextFlip;
+    if(remaining > 0){
+      fnbtn.style.display = '';
+      fnbtn.textContent = `翻开下一张 ✦`;
+      document.getElementById('desc').textContent =
+        `剩余 ${remaining} 张待翻开`;
+    } else {
+      // all flipped — repurpose button as redraw
+      fnbtn.textContent = '✦ 重新抽牌';
+      document.getElementById('desc').textContent = SPREADS[curSp].desc;
+    }
+  }
+
+  // wire up the flip-next / redraw button (unbind previous listener first)
+  const fnbtn = document.getElementById('fnbtn');
+  const newFnbtn = fnbtn.cloneNode(true); // remove old listeners
+  fnbtn.parentNode.replaceChild(newFnbtn, fnbtn);
+  newFnbtn.style.display = '';
+
+  newFnbtn.addEventListener('click', ()=>{
+    if(nextFlip < sp.pos.length){
+      // close reading panel if open
+      document.getElementById('panel').classList.remove('open');
+      const slots = canvas.querySelectorAll('.slot');
+      const s = slots[nextFlip];
+      if(!s) return;
+      s.classList.remove('next-flip');
+      s.classList.add('flipped','click');
+      nextFlip++;
+      flippedCount = nextFlip;
+      refreshZIndex();
+      if(nextFlip < sp.pos.length) highlightNext();
+      updateFlipBtn();
+    } else {
+      document.getElementById('dbtn').click();
+    }
+  });
+
+  updateFlipBtn();
+  highlightNext();
+  refreshZIndex();
+
+  // canvas tap: only for preview (touch) or open reading panel (desktop/touch)
+  let lastTappedIdx = -1;
+
+  function handleCanvasTap(target){
+    const preview = document.getElementById('card-preview');
+    const isTouchDev = window.matchMedia('(hover:none)').matches;
+
+    const onPreview = target && typeof target.closest === 'function'
+      && target.closest('#card-preview');
+    if(onPreview){
+      preview.classList.remove('show');
+      lastTappedIdx = -1;
+      return;
+    }
+
+    const s = (target && typeof target.closest === 'function')
+      ? target.closest('.slot[data-i]')
+      : null;
+
+    if(!s){
+      if(isTouchDev){ preview.classList.remove('show'); lastTappedIdx = -1; }
+      return;
+    }
+
+    if(!s.classList.contains('flipped')) return; // unflipped cards no longer tappable
+
+    const idx = +s.dataset.i;
+
+    if(isTouchDev){
+      if(lastTappedIdx === idx){
+        preview.classList.remove('show');
+        lastTappedIdx = -1;
+        openPanel(idx);
+      } else {
+        const card = drawn[idx];
+        if(card) showPreview(card, 0, 0);
+        lastTappedIdx = idx;
+      }
+    } else {
+      preview.classList.remove('show');
+      openPanel(idx);
+    }
+  }
+
+  canvas.addEventListener('click', e => handleCanvasTap(e.target));
+
+  let touchTargetEl = null;
+  canvas.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    let el = document.elementFromPoint(t.clientX, t.clientY);
+    while(el && el !== canvas && typeof el.closest !== 'function') el = el.parentNode;
+    touchTargetEl = el || null;
+  }, {passive: true});
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    if(touchTargetEl){ handleCanvasTap(touchTargetEl); touchTargetEl = null; }
+  }, {passive: false});
+}
+
+function openPanel(start){
+  if(flippedCount === 0) return;
+  const sp = SPREADS[curSp];
+  const pb = document.getElementById('pb');
+  pb.innerHTML='';
+  // only render cards that have been flipped (index < flippedCount)
+  let renderedIdx = 0;
+  let scrollTarget = null;
+  drawn.forEach((card,i)=>{
+    if(i >= flippedCount) return;
+    const d = document.createElement('div');
+    d.className = 'rc' + (i===start?' hi':'');
+    const tw=70, th=123;
+    d.innerHTML=`<div class="rct">${faceSVG(card,tw,th)}</div>
+<div style="flex:1;min-width:0">
+  <div class="rcp">${sp.pos[i].l}</div>
+  <div class="rcn">${card.type==='major'?card.name+' · '+card.eng:card.name}</div>
+  ${card._rv?'<div class="rcr">✦ 逆位 Reversed</div>':''}
+  <div class="rcm">
+    ${card._rv
+      ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:11px;letter-spacing:.1em">✦ 逆位</span><br>${card.r}<br><br><span style="color:var(--md);font-size:12px">正位含义：</span><br>${card.m}`
+      : card.m
+    }
+  </div>
+</div>`;
+    pb.appendChild(d);
+    if(i===start) scrollTarget = d;
+    renderedIdx++;
+  });
+  document.getElementById('panel').classList.add('open');
+  setTimeout(()=>{
+    if(scrollTarget) scrollTarget.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },80);
+}
+
+// ── Event handlers ──
+document.querySelectorAll('.tb').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tb').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    curSp = b.dataset.sp;
+    const sp = SPREADS[curSp];
+    document.getElementById('desc').textContent = sp.desc;
+    document.getElementById('cnt').textContent  = `${sp.cnt} 张牌 · ${sp.label}`;
+    drawn=[];
+    flippedCount=0;
+    document.getElementById('panel').classList.remove('open');
+    document.getElementById('dbtn').style.display = '';
+    document.getElementById('fnbtn').style.display = 'none';
+    render();
+  });
+});
+
+document.getElementById('dbtn').addEventListener('click',()=>{
+  document.getElementById('panel').classList.remove('open');
+  const sp = SPREADS[curSp];
+  drawn = shuffle(DECK).slice(0,sp.cnt).map(c=>({...c,_rv:Math.random()<.25}));
+  flippedCount = 0;
+  // hide draw btn, show flip-next btn
+  document.getElementById('dbtn').style.display = 'none';
+  render();
+});
+
+document.getElementById('xbtn').addEventListener('click',()=>{
+  drawn=[];
+  flippedCount=0;
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('card-preview').classList.remove('show');
+  document.getElementById('dbtn').style.display = '';
+  document.getElementById('fnbtn').style.display = 'none';
+  document.getElementById('desc').textContent = SPREADS[curSp].desc;
+  render();
+});
+
+document.getElementById('rbtn').addEventListener('click',()=>{ if(drawn.length) openPanel(0); });
+// Prevent panel touch events from bubbling to canvas touchstart/touchend
+document.getElementById('panel').addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
+document.getElementById('panel').addEventListener('touchend', e=>e.stopPropagation(), {passive:false});
+
+document.getElementById('clo').addEventListener('click',()=>{
+  document.getElementById('panel').classList.remove('open');
+});
+
+// ── Resize: re-render if cards visible ──
+new ResizeObserver(()=>{ if(drawn.length) render(); })
+  .observe(document.getElementById('stage'));
+
+// ── Init ──
+const sp0 = SPREADS[curSp];
+document.getElementById('desc').textContent = sp0.desc;
+document.getElementById('cnt').textContent  = `${sp0.cnt} 张牌 · ${sp0.label}`;
+</script>
+</body>
+</html>
