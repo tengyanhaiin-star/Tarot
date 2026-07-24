@@ -692,7 +692,7 @@ function render(){
 
     function showPreview(card, clientX, clientY){
       const preview = document.getElementById('card-preview');
-      const PW = 320, PH = 560;
+      const PW = 292, PH = 560;
       preview.innerHTML = faceSVG(card, PW, PH);
       if(!isTouchDevice()){
         preview.style.transform = '';
@@ -722,7 +722,7 @@ function render(){
       if(isTouchDevice()) return;
       const preview = document.getElementById('card-preview');
       if(!preview.classList.contains('show')) return;
-      const PW=160, PH=280, margin=16;
+      const PW=146, PH=280, margin=16;
       let px = e.clientX + margin;
       let py = e.clientY - PH / 2;
       if(px + PW > window.innerWidth - margin) px = e.clientX - PW - margin;
@@ -883,7 +883,7 @@ function openPanel(start){
     if(i >= flippedCount) return;
     const d = document.createElement('div');
     d.className = 'rc' + (i===start?' hi':'');
-    const tw=70, th=123;
+    const tw=64, th=123;
     d.innerHTML=`<div class="rct">${faceSVG(card,tw,th)}</div>
 <div style="flex:1;min-width:0">
   <div class="rcp">${sp.pos[i].l}</div>
