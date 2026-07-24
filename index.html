@@ -799,10 +799,8 @@ function render(){
       if(nextFlip < sp.pos.length) highlightNext();
       updateFlipBtn();
     } else {
-      // 再次抽牌：同一副牌，不洗牌，重新抽取
+      // 再次抽牌：同一副牌，不洗牌，正逆位不变
       document.getElementById('panel').classList.remove('open');
-      const sp2 = SPREADS[curSp];
-      drawn = shuffledDeck.slice(0, sp2.cnt).map(c=>({...c,_rv:Math.random()<.25}));
       flippedCount = 0;
       render();
     }
@@ -888,10 +886,10 @@ function openPanel(start){
 <div style="flex:1;min-width:0">
   <div class="rcp">${sp.pos[i].l}</div>
   <div class="rcn">${card.type==='major'?card.name+' · '+card.eng:card.name}</div>
-  ${card._rv?'<div class="rcr">✦ 逆位 Reversed</div>':''}
+  ${card._rv?'<div class="rcr">逆位能量向内转化，这是一个向内探索的邀请。</div>':''}
   <div class="rcm">
     ${card._rv
-      ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:11px;letter-spacing:.1em">✦ 逆位</span><br>${card.r}<br><br><span style="color:var(--md);font-size:12px">正位含义：</span><br>${card.m}`
+      ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:11px;letter-spacing:.1em">✦ 逆位 Reversed</span><br>${card.r}<br><br><span style="color:var(--md);font-size:12px">正位含义：</span><br>${card.m}`
       : card.m
     }
   </div>
