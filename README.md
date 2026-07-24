@@ -43,8 +43,8 @@
 
 塔罗牌图片来自 [FreeSVG.org](https://freesvg.org/deck-of-french-tarot-playing-cards)：
 
-> **Deck of french tarot playing cards**
-> 作者：kar.abist@yopmail.com
-> 许可证：Public Domain（公共领域）
+- **Deck of french tarot playing cards**
+- 作者：kar.abist@yopmail.com
+- 许可证：Public Domain（公共领域）
 
 原图为法式塔罗牌 SVG，本项目将其转换为 PNG 格式使用。公共领域作品可自由使用、修改与分发，无需署名，但此处仍注明来源以示尊重。
