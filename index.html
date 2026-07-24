@@ -23,7 +23,7 @@ html,body{
 }
 :root{
   --or:#d97757;--bl:#6a9bcc;--gr:#788c5d;
-  --dk:#141413;--lt:#faf9f5;--md:#b0aea5;--dim:#5a5854;
+  --dk:#141413;--lt:#faf9f5;--md:#b0aea5;--dim:#a8a49e;
 }
 
 
@@ -226,19 +226,6 @@ html,body{
 #pb::-webkit-scrollbar-track{background:transparent}
 #pb::-webkit-scrollbar-thumb{background:rgba(217,119,87,.3);border-radius:2px}
 
-.rc{
-  display:flex;gap:14px;align-items:flex-start;
-  padding:14px;border:1px solid rgba(217,119,87,.14);
-  border-radius:7px;background:rgba(217,119,87,.03);
-  transition:border-color .2s;
-}
-.rc.hi{border-color:rgba(217,119,87,.55);background:rgba(217,119,87,.06)}
-.rct{flex-shrink:0}
-.rcp{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--or);letter-spacing:.15em;margin-bottom:4px;text-transform:uppercase}
-.rcn{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--lt);font-weight:500;margin-bottom:5px}
-.rcr{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;margin-bottom:4px}
-.rcm{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);line-height:1.65}
-
 /* ── MOBILE RESPONSIVE ── */
 @media (max-width:600px){
   #hdr{padding:8px 14px 6px}
@@ -253,9 +240,10 @@ html,body{
     scrollbar-width:none;
   }
   #tabs::-webkit-scrollbar{display:none}
+
   .tb{font-size:12px;padding:6px 10px;flex-shrink:0}
 
-  #bot{padding:8px 14px 36px;gap:8px}
+  #bot{padding:8px 14px 40px;gap:8px}
   .info .desc{font-size:13px}
   .info .cnt{font-size:12px}
   .btn-p{font-size:13px;padding:9px 9px}
@@ -271,6 +259,20 @@ html,body{
   .rcm{font-size:13px}
 }
 
+
+.rc{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px;border:1px solid rgba(217,119,87,.14);
+  border-radius:7px;background:rgba(217,119,87,.03);
+  transition:border-color .2s;
+}
+.rc.hi{border-color:rgba(217,119,87,.55);background:rgba(217,119,87,.06)}
+.rct{flex-shrink:0}
+.rcp{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--or);letter-spacing:.15em;margin-bottom:4px;text-transform:uppercase}
+.rcn{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--lt);font-weight:500;margin-bottom:5px}
+.rcr{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;margin-bottom:4px}
+.rcm{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);line-height:1.65}
+
 /* ── STAR BACKGROUND ── */
 #stars{position:absolute;inset:0;pointer-events:none;z-index:0}
 </style>
@@ -281,9 +283,9 @@ html,body{
   <div id="hdr">
     <div style="display:flex;align-items:baseline">
       <h1>TAROT</h1>
-      <span class="sub">78-card tarot simulator</span>
+      <span class="sub">古老智慧在此流动，静心感受。</span>
     </div>
-    <span class="badge">78 CARDS</span>
+    <span class="badge">78-card tarot simulator</span>
   </div>
 
   <div id="tabs">
@@ -566,7 +568,7 @@ const SPREADS={
     ]}
 };
 
-let curSp='single', drawn=[], flippedCount=0;
+let curSp='single', drawn=[], flippedCount=0, shuffledDeck=[];
 
 function shuffle(a){
   const b=[...a];
@@ -607,11 +609,11 @@ function cardSizeForSpread(stW, stH, positions){
   // available area per card slot
   const byW = stW*margin / (spanX + 1.6);
   const byH = stH*margin / (spanY + 1.6);
-  // card ratio h/w = 1.75
+  // card ratio h/w = 483/252 ≈ 1.9167
   const fromW = byW;
-  const fromH = byH / 1.75;
+  const fromH = byH / (483/252);
   const w = Math.floor(Math.min(fromW, fromH, 130));
-  const h = Math.floor(w * 1.75);
+  const h = Math.floor(w * (483/252));
   return { w: Math.max(w, 52), h: Math.max(h, 91) };
 }
 
@@ -653,10 +655,10 @@ function render(){
   if(curSp === 'single' || curSp === 'three'){
     const maxW = Math.floor(stW * 0.88 / (sp.pos.length === 1 ? 1 : 3));
     const maxH = Math.floor(stH * 0.82);
-    const maxByRatio = Math.floor(maxH / 1.75);
+    const maxByRatio = Math.floor(maxH / (483/252));
     const doubled = Math.min(w * 2, maxW, maxByRatio, 260);
     w = doubled;
-    h = Math.floor(w * 1.75);
+    h = Math.floor(w * (483/252));
   }
 
   const xs   = sp.pos.map(p=>p.x), ys = sp.pos.map(p=>p.y);
@@ -771,7 +773,7 @@ function render(){
         `剩余 ${remaining} 张待翻开`;
     } else {
       // all flipped — repurpose button as redraw
-      fnbtn.textContent = '✦ 重新抽牌';
+      fnbtn.textContent = '✦ 再次抽牌';
       document.getElementById('desc').textContent = SPREADS[curSp].desc;
     }
   }
@@ -797,7 +799,12 @@ function render(){
       if(nextFlip < sp.pos.length) highlightNext();
       updateFlipBtn();
     } else {
-      document.getElementById('dbtn').click();
+      // 再次抽牌：同一副牌，不洗牌，重新抽取
+      document.getElementById('panel').classList.remove('open');
+      const sp2 = SPREADS[curSp];
+      drawn = shuffledDeck.slice(0, sp2.cnt).map(c=>({...c,_rv:Math.random()<.25}));
+      flippedCount = 0;
+      render();
     }
   });
 
@@ -920,15 +927,16 @@ document.querySelectorAll('.tb').forEach(b=>{
 document.getElementById('dbtn').addEventListener('click',()=>{
   document.getElementById('panel').classList.remove('open');
   const sp = SPREADS[curSp];
-  drawn = shuffle(DECK).slice(0,sp.cnt).map(c=>({...c,_rv:Math.random()<.25}));
+  shuffledDeck = shuffle(DECK);
+  drawn = shuffledDeck.slice(0,sp.cnt).map(c=>({...c,_rv:Math.random()<.25}));
   flippedCount = 0;
-  // hide draw btn, show flip-next btn
   document.getElementById('dbtn').style.display = 'none';
   render();
 });
 
 document.getElementById('xbtn').addEventListener('click',()=>{
   drawn=[];
+  shuffledDeck=[];
   flippedCount=0;
   document.getElementById('panel').classList.remove('open');
   document.getElementById('card-preview').classList.remove('show');
