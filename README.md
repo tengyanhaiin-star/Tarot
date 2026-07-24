@@ -31,7 +31,7 @@
 
 ## 使用方法
 
-用浏览器打开 `index.html` 即可。
+用浏览器打开 [塔罗牌](https://tengyanhaiin-star.github.io/Tarot/) 即可。
 
 ## 技术说明
 
