@@ -18,7 +18,7 @@
 **78张完整牌组**
 - 22张大阿卡纳（Major Arcana）
 - 56张小阿卡纳（权杖、圣杯、宝剑、金币各14张）
-- 每张牌均有正位与逆位解读（约25%概率逆位）
+- 每张牌均有正位与逆位解读（25%概率逆位）
 
 **交互方式**
 - 抽牌后，所有牌背面朝上发出
@@ -41,7 +41,4 @@
 
 ## 图片来源
 
-塔罗牌图片来自 [freepngimg.com](https://freepngimg.com/svg/153970-deck-of-french-tarot-playing-cards)：
-
-- **Deck of french tarot playing cards**
-- 许可证：CC0 1.0 Universal
+塔罗牌图片来自 [freepngimg.com：Deck of French Tarot Playing Cards](https://freepngimg.com/svg/153970-deck-of-french-tarot-playing-cards)，许可证：CC0 1.0 Universal。
