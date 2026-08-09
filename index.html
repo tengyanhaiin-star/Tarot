@@ -692,17 +692,14 @@ function render(){
 
     function showPreview(card, clientX, clientY){
       const preview = document.getElementById('card-preview');
-      const PW = 292, PH = 560;
+      const PW = 336, PH = 644;
       preview.innerHTML = faceSVG(card, PW, PH);
       if(!isTouchDevice()){
         preview.style.transform = '';
-        const margin = 16;
-        let px = clientX + margin;
-        let py = clientY - PH / 2;
-        if(px + PW > window.innerWidth - margin) px = clientX - PW - margin;
-        py = Math.max(margin, Math.min(py, window.innerHeight - PH - margin));
-        preview.style.left = px + 'px';
-        preview.style.top  = py + 'px';
+        const stage = document.getElementById('stage');
+        const sr = stage.getBoundingClientRect();
+        preview.style.left = (sr.right - PW) + 'px';
+        preview.style.top  = (sr.top  + sr.height/2 - PH/2) + 'px';
       } else {
         preview.style.transform = '';
         preview.style.left = '';
@@ -711,24 +708,12 @@ function render(){
       preview.classList.add('show');
     }
 
-    // Desktop: mouseenter/move/leave
+    // Desktop: mouseenter/leave only — no mousemove tracking
     slot.addEventListener('mouseenter', e => {
       if(isTouchDevice()) return;
       if(!slot.classList.contains('flipped')) return;
       const card = drawn[+slot.dataset.i];
       if(card) showPreview(card, e.clientX, e.clientY);
-    });
-    slot.addEventListener('mousemove', e => {
-      if(isTouchDevice()) return;
-      const preview = document.getElementById('card-preview');
-      if(!preview.classList.contains('show')) return;
-      const PW=146, PH=280, margin=16;
-      let px = e.clientX + margin;
-      let py = e.clientY - PH / 2;
-      if(px + PW > window.innerWidth - margin) px = e.clientX - PW - margin;
-      py = Math.max(margin, Math.min(py, window.innerHeight - PH - margin));
-      preview.style.left = px + 'px';
-      preview.style.top  = py + 'px';
     });
     slot.addEventListener('mouseleave', () => {
       if(isTouchDevice()) return;
