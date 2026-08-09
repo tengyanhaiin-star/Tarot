@@ -607,14 +607,14 @@ function cardSizeForSpread(stW, stH, positions){
   const spanY=(Math.max(...ys)-Math.min(...ys))||0;
   const margin=0.88;
   // available area per card slot
-  const byW = stW*margin / (spanX + 1.6);
-  const byH = stH*margin / (spanY + 1.6);
+  const byW = stW*margin / (spanX + 1.25);
+  const byH = stH*margin / (spanY + 1.25);
   // card ratio h/w = 483/252 ≈ 1.9167
   const fromW = byW;
   const fromH = byH / (483/252);
-  const w = Math.floor(Math.min(fromW, fromH, 130));
+  const w = Math.floor(Math.min(fromW, fromH));
   const h = Math.floor(w * (483/252));
-  return { w: Math.max(w, 52), h: Math.max(h, 91) };
+  return { w: Math.max(w, 48), h: Math.max(h, 92) };
 }
 
 function refreshZIndex(){
@@ -651,15 +651,6 @@ function render(){
   const stW  = canvas.offsetWidth;
   const stH  = canvas.offsetHeight;
   let {w,h} = cardSizeForSpread(stW, stH, sp.pos);
-  // single and three spreads: double the card size
-  if(curSp === 'single' || curSp === 'three'){
-    const maxW = Math.floor(stW * 0.88 / (sp.pos.length === 1 ? 1 : 3));
-    const maxH = Math.floor(stH * 0.82);
-    const maxByRatio = Math.floor(maxH / (483/252));
-    const doubled = Math.min(w * 2, maxW, maxByRatio, 260);
-    w = doubled;
-    h = Math.floor(w * (483/252));
-  }
 
   const xs   = sp.pos.map(p=>p.x), ys = sp.pos.map(p=>p.y);
   const midX = (Math.min(...xs)+Math.max(...xs))/2;
