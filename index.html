@@ -29,12 +29,9 @@ html,body{
 
 #app{
   display:flex;flex-direction:column;
-  width:100vw;height:100vh;
-  /* iPhone safe areas */
-  padding-top:env(safe-area-inset-top);
-  padding-bottom:env(safe-area-inset-bottom);
-  padding-left:env(safe-area-inset-left);
-  padding-right:env(safe-area-inset-right);
+  width:100vw;
+  height:100vh;
+  height:100dvh; /* dynamic viewport height — accounts for browser chrome on iOS */
   background:#141413;
   overflow:hidden;
 }
@@ -43,6 +40,9 @@ html,body{
 #hdr{
   flex:0 0 auto;
   padding:14px 28px 11px;
+  padding-top:calc(14px + env(safe-area-inset-top));
+  padding-left:calc(28px + env(safe-area-inset-left));
+  padding-right:calc(28px + env(safe-area-inset-right));
   border-bottom:1px solid rgba(217,119,87,.2);
   display:flex;align-items:center;justify-content:space-between;
 }
@@ -168,6 +168,9 @@ html,body{
   flex:0 0 auto;
   border-top:1px solid rgba(217,119,87,.12);
   padding:10px 28px 14px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  padding-left:calc(28px + env(safe-area-inset-left));
+  padding-right:calc(28px + env(safe-area-inset-right));
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
 .info .desc{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic}
@@ -243,7 +246,7 @@ html,body{
 
   .tb{font-size:12px;padding:6px 10px;flex-shrink:0}
 
-  #bot{padding:8px 14px 40px;gap:8px}
+  #bot{padding:8px 14px 10px;padding-bottom:calc(10px + env(safe-area-inset-bottom));gap:8px}
   .info .desc{font-size:13px}
   .info .cnt{font-size:12px}
   .btn-p{font-size:13px;padding:9px 9px}
