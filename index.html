@@ -909,7 +909,7 @@ document.getElementById('dbtn').addEventListener('click',()=>{
   document.getElementById('panel').classList.remove('open');
   const sp = SPREADS[curSp];
   shuffledDeck = shuffle(DECK);
-  drawn = shuffledDeck.slice(0,sp.cnt).map(c=>({...c,_rv:Math.random()<.25}));
+  drawn = shuffledDeck.slice(0,sp.cnt).map(c=>({...c,_rv:Math.random()<.5}));
   flippedCount = 0;
   document.getElementById('dbtn').style.display = 'none';
   render();
