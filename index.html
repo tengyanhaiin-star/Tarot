@@ -110,7 +110,7 @@ html,body{
 .slot.click{cursor:pointer}
 .slot.next-flip{cursor:pointer}
 .slot.next-flip .back{
-  border-radius:9px;
+  border-radius:var(--card-radius,9px);
   animation:pulse-glow 1.4s ease-in-out infinite;
 }
 @keyframes pulse-glow{
@@ -126,7 +126,7 @@ html,body{
 .slot.zoomed .lbl{opacity:0}
 .face,.back{
   position:absolute;inset:0;
-  backface-visibility:hidden;border-radius:9px;overflow:hidden;
+  backface-visibility:hidden;border-radius:var(--card-radius,9px);overflow:hidden;
 }
 .face{transform:rotateY(180deg)}
 .lbl{
@@ -147,7 +147,7 @@ html,body{
   filter:drop-shadow(0 12px 40px rgba(0,0,0,.85));
 }
 #card-preview.show{opacity:1}
-#card-preview svg{display:block;border-radius:12px}
+#card-preview img{display:block}
 
 /* on touch devices the preview is centred and dismissable */
 @media (hover:none){
@@ -591,13 +591,15 @@ function cardFilename(card){
 
 // ── Card renderers (PNG image) ──
 function backSVG(w,h){
-  return `<img src="tarot_cards/back.png" style="width:${w}px;height:${h}px;display:block;border-radius:8px;object-fit:cover">`;
+  const br = Math.round(h * 0.03);
+  return `<img src="tarot_cards/back.png" style="width:${w}px;height:${h}px;display:block;border-radius:${br}px;object-fit:cover">`;
 }
 
 function faceSVG(card,w,h){
   const src = cardFilename(card);
   const rotate = card._rv ? 'transform:rotate(180deg);' : '';
-  return `<img src="${src}" style="width:${w}px;height:${h}px;display:block;border-radius:8px;object-fit:cover;${rotate}">`;
+  const br = Math.round(h * 0.03);
+  return `<img src="${src}" style="width:${w}px;height:${h}px;display:block;border-radius:${br}px;object-fit:cover;${rotate}">`;
 }
 
 // ── Layout engine ──
@@ -650,7 +652,9 @@ function render(){
   const sp   = SPREADS[curSp];
   const stW  = canvas.offsetWidth;
   const stH  = canvas.offsetHeight;
-  let {w,h} = cardSizeForSpread(stW, stH, sp.pos);
+  const {w,h} = cardSizeForSpread(stW, stH, sp.pos);
+  // set global card border-radius = 3% of card height
+  document.documentElement.style.setProperty('--card-radius', Math.round(h*0.03)+'px');
 
   const xs   = sp.pos.map(p=>p.x), ys = sp.pos.map(p=>p.y);
   const midX = (Math.min(...xs)+Math.max(...xs))/2;
