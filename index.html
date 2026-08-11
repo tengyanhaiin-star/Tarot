@@ -288,7 +288,6 @@ html,body{
 .rct{flex-shrink:0}
 .rcp{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--or);letter-spacing:.15em;margin-bottom:4px;text-transform:uppercase}
 .rcn{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--lt);font-weight:500;margin-bottom:5px}
-.rcr{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;margin-bottom:4px}
 .rcm{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);line-height:1.65}
 
 /* ── STAR BACKGROUND ── */
@@ -950,7 +949,6 @@ function openPanel(start){
 <div style="flex:1;min-width:0">
   <div class="rcp">${item.position}</div>
   <div class="rcn">${item.cardName}</div>
-  ${item.reversed?'<div class="rcr">逆位能量向内转化，这是一个向内探索的邀请。</div>':''}
   <div class="rcm">
     ${item.reversed
       ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:11px;letter-spacing:.1em">✦ 逆位 Reversed</span><br>${item.meaning}`
@@ -1031,7 +1029,7 @@ function measureItemBlockHeight(ctx, item, textW, lineHeight, cardH){
   h += 18;
   ctx.font = '500 16px "Noto Serif SC", serif';
   h += 22;
-  if(item.reversed) h += 22;
+  if(item.reversed) h += 18;
   ctx.font = '15px "Noto Serif SC", serif';
   h += measureWrapHeight(ctx, item.meaning, textW, lineHeight);
   return Math.max(h, cardH);
@@ -1131,10 +1129,6 @@ async function exportReadingAsPNG(){
       ty += 22;
 
       if(item.reversed){
-        ctx.fillStyle = '#b0aea5';
-        ctx.font = 'italic 14px "Noto Serif SC", serif';
-        ctx.fillText('逆位能量向内转化，这是一个向内探索的邀请。', TEXT_X, ty + 14);
-        ty += 22;
         ctx.fillStyle = '#d97757';
         ctx.font = '11px "Noto Serif SC", serif';
         ctx.fillText('✦ 逆位 Reversed', TEXT_X, ty + 11);
