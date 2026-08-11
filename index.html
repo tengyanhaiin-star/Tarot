@@ -988,36 +988,56 @@ function loadImage(src){
   });
 }
 
+function isLineStartForbidden(ch){
+  return /[，。、；：？！…—·）】》」』"'％)\]},.!?;:]/.test(ch);
+}
+function isLineEndForbidden(ch){
+  return /[（【《「『"'([<{]/.test(ch);
+}
+
+function splitTextLines(ctx, text, maxWidth){
+  if(!text) return [''];
+  const lines = [];
+  let line = '';
+  const fits = s => ctx.measureText(s).width <= maxWidth;
+
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(!line){
+      line = ch;
+      continue;
+    }
+    const test = line + ch;
+    if(fits(test)){
+      line = test;
+      continue;
+    }
+    if(isLineStartForbidden(ch)){
+      line += ch;
+      continue;
+    }
+    let carry = '';
+    while(line.length && isLineEndForbidden(line[line.length - 1])){
+      carry = line[line.length - 1] + carry;
+      line = line.slice(0, -1);
+    }
+    if(line) lines.push(line);
+    line = carry + ch;
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
 function measureWrapHeight(ctx, text, maxWidth, lineHeight){
   if(!text) return lineHeight;
-  let line = '', lines = 1;
-  for(let i=0;i<text.length;i++){
-    const test = line + text[i];
-    if(ctx.measureText(test).width > maxWidth && line){
-      lines++;
-      line = text[i];
-    } else {
-      line = test;
-    }
-  }
-  return lines * lineHeight;
+  return splitTextLines(ctx, text, maxWidth).length * lineHeight;
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight){
   if(!text) return y + lineHeight;
-  let line = '', cy = y;
-  for(let i=0;i<text.length;i++){
-    const test = line + text[i];
-    if(ctx.measureText(test).width > maxWidth && line){
-      ctx.fillText(line, x, cy);
-      line = text[i];
-      cy += lineHeight;
-    } else {
-      line = test;
-    }
-  }
-  if(line){
-    ctx.fillText(line, x, cy);
+  let cy = y;
+  for(const ln of splitTextLines(ctx, text, maxWidth)){
+    if(ln) ctx.fillText(ln, x, cy);
     cy += lineHeight;
   }
   return cy;
