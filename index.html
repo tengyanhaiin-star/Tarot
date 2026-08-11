@@ -197,6 +197,9 @@ html,body{
 }
 #rbtn{color:var(--gr);border-color:rgba(120,140,93,.38)}
 #rbtn:hover{border-color:var(--gr);color:#a0bb7d}
+#ebtn{color:var(--bl);border-color:rgba(106,155,204,.38)}
+#ebtn:hover{border-color:var(--bl);color:#8fb8e0}
+#ebtn:disabled{opacity:.55;cursor:wait}
 #xbtn{color:var(--md)}
 #xbtn:hover{color:#fff;border-color:var(--md)}
 
@@ -324,6 +327,7 @@ html,body{
     <button class="btn-p" id="dbtn">✦ 抽牌</button>
     <button class="btn-p" id="fnbtn" style="display:none">翻开下一张 ✦</button>
     <button class="btn-s" id="rbtn">解读 ✦</button>
+    <button class="btn-s" id="ebtn" style="display:none">导出 ✦</button>
     <button class="btn-s" id="xbtn">重置</button>
   </div>
 
@@ -645,6 +649,7 @@ function render(){
     empty.style.display='flex';
     document.getElementById('dbtn').style.display = '';
     document.getElementById('fnbtn').style.display = 'none';
+    updateExportButton();
     return;
   }
   empty.style.display = 'none';
@@ -759,6 +764,7 @@ function render(){
       fnbtn.textContent = '✦ 再次抽牌';
       document.getElementById('desc').textContent = SPREADS[curSp].desc;
     }
+    updateExportButton();
   }
 
   // wire up the flip-next / redraw button (unbind previous listener first)
@@ -850,41 +856,264 @@ function render(){
     e.preventDefault();
     if(touchTargetEl){ handleCanvasTap(touchTargetEl); touchTargetEl = null; }
   }, {passive: false});
+
+  updateExportButton();
+}
+
+function getReadingItems(){
+  const sp = SPREADS[curSp];
+  return drawn.slice(0, flippedCount).map((card, i) => ({
+    position: sp.pos[i].l,
+    cardName: card.type === 'major' ? card.name + ' · ' + card.eng : card.name,
+    reversed: !!card._rv,
+    meaning: card._rv ? card.r : card.m,
+    card
+  }));
+}
+
+function isReadingComplete(){
+  const sp = SPREADS[curSp];
+  return drawn.length > 0 && flippedCount >= sp.cnt;
+}
+
+function updateExportButton(){
+  const ebtn = document.getElementById('ebtn');
+  if(!ebtn) return;
+  ebtn.style.display = isReadingComplete() ? '' : 'none';
 }
 
 function openPanel(start){
   if(flippedCount === 0) return;
-  const sp = SPREADS[curSp];
   const pb = document.getElementById('pb');
   pb.innerHTML='';
-  // only render cards that have been flipped (index < flippedCount)
-  let renderedIdx = 0;
   let scrollTarget = null;
-  drawn.forEach((card,i)=>{
-    if(i >= flippedCount) return;
+  getReadingItems().forEach((item, i)=>{
     const d = document.createElement('div');
     d.className = 'rc' + (i===start?' hi':'');
     const tw=64, th=123;
-    d.innerHTML=`<div class="rct">${faceSVG(card,tw,th)}</div>
+    d.innerHTML=`<div class="rct">${faceSVG(item.card,tw,th)}</div>
 <div style="flex:1;min-width:0">
-  <div class="rcp">${sp.pos[i].l}</div>
-  <div class="rcn">${card.type==='major'?card.name+' · '+card.eng:card.name}</div>
-  ${card._rv?'<div class="rcr">逆位能量向内转化，这是一个向内探索的邀请。</div>':''}
+  <div class="rcp">${item.position}</div>
+  <div class="rcn">${item.cardName}</div>
+  ${item.reversed?'<div class="rcr">逆位能量向内转化，这是一个向内探索的邀请。</div>':''}
   <div class="rcm">
-    ${card._rv
-      ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:11px;letter-spacing:.1em">✦ 逆位 Reversed</span><br>${card.r}`
-      : card.m
+    ${item.reversed
+      ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:11px;letter-spacing:.1em">✦ 逆位 Reversed</span><br>${item.meaning}`
+      : item.meaning
     }
   </div>
 </div>`;
     pb.appendChild(d);
     if(i===start) scrollTarget = d;
-    renderedIdx++;
   });
   document.getElementById('panel').classList.add('open');
   setTimeout(()=>{
     if(scrollTarget) scrollTarget.scrollIntoView({behavior:'smooth',block:'nearest'});
   },80);
+}
+
+function roundRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function loadImage(src){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.onerror = ()=>reject(new Error('Failed to load: '+src));
+    img.src = src;
+  });
+}
+
+function measureWrapHeight(ctx, text, maxWidth, lineHeight){
+  if(!text) return lineHeight;
+  let line = '', lines = 1;
+  for(let i=0;i<text.length;i++){
+    const test = line + text[i];
+    if(ctx.measureText(test).width > maxWidth && line){
+      lines++;
+      line = text[i];
+    } else {
+      line = test;
+    }
+  }
+  return lines * lineHeight;
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+  if(!text) return y + lineHeight;
+  let line = '', cy = y;
+  for(let i=0;i<text.length;i++){
+    const test = line + text[i];
+    if(ctx.measureText(test).width > maxWidth && line){
+      ctx.fillText(line, x, cy);
+      line = text[i];
+      cy += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  if(line){
+    ctx.fillText(line, x, cy);
+    cy += lineHeight;
+  }
+  return cy;
+}
+
+function measureItemBlockHeight(ctx, item, textW, lineHeight, cardH){
+  let h = 0;
+  ctx.font = '13px "Noto Serif SC", serif';
+  h += 18;
+  ctx.font = '500 16px "Noto Serif SC", serif';
+  h += 22;
+  if(item.reversed) h += 22;
+  ctx.font = '15px "Noto Serif SC", serif';
+  h += measureWrapHeight(ctx, item.meaning, textW, lineHeight);
+  return Math.max(h, cardH);
+}
+
+function exportTimestamp(){
+  const now = new Date();
+  const p = n=>String(n).padStart(2,'0');
+  return `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}`;
+}
+
+async function exportReadingAsPNG(){
+  if(!isReadingComplete()) return;
+  const ebtn = document.getElementById('ebtn');
+  const origText = ebtn.textContent;
+  ebtn.textContent = '生成中…';
+  ebtn.disabled = true;
+
+  try{
+    await document.fonts.ready;
+    try{
+      await document.fonts.load('400 15px "Noto Serif SC"');
+      await document.fonts.load('500 18px "Noto Serif SC"');
+    }catch(_){}
+
+    const items = getReadingItems();
+    const sp = SPREADS[curSp];
+    const images = await Promise.all(items.map(item=>loadImage(cardFilename(item.card))));
+
+    const W = 750, PAD = 40, CARD_W = 100;
+    const CARD_H = Math.round(CARD_W * (483/252));
+    const GAP = 24;
+    const TEXT_X = PAD + CARD_W + 20;
+    const TEXT_W = W - TEXT_X - PAD;
+    const LINE = 24;
+    const scale = 2;
+
+    const mctx = document.createElement('canvas').getContext('2d');
+    let totalH = PAD + 36 + 20 + GAP;
+    items.forEach(item=>{
+      totalH += measureItemBlockHeight(mctx, item, TEXT_W, LINE, CARD_H) + GAP;
+    });
+    totalH += PAD - GAP;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W * scale;
+    canvas.height = totalH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = '#141413';
+    ctx.fillRect(0, 0, W, totalH);
+
+    const ts = exportTimestamp();
+    ctx.fillStyle = '#d97757';
+    ctx.font = '500 18px "Noto Serif SC", serif';
+    ctx.fillText(`TAROT · ${sp.label} · ${ts.slice(0,10)} ${ts.slice(11,13)}:${ts.slice(13)}`, PAD, PAD + 18);
+
+    let y = PAD + 36;
+    ctx.strokeStyle = 'rgba(217,119,87,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(PAD, y);
+    ctx.lineTo(W - PAD, y);
+    ctx.stroke();
+    y += GAP;
+
+    items.forEach((item, idx)=>{
+      const img = images[idx];
+      const blockH = measureItemBlockHeight(ctx, item, TEXT_W, LINE, CARD_H);
+
+      ctx.fillStyle = 'rgba(217,119,87,0.03)';
+      ctx.strokeStyle = 'rgba(217,119,87,0.14)';
+      roundRectPath(ctx, PAD - 4, y - 4, W - 2*PAD + 8, blockH + 8, 7);
+      ctx.fill();
+      ctx.stroke();
+
+      const cardY = y + (blockH - CARD_H) / 2;
+      if(item.reversed){
+        ctx.save();
+        ctx.translate(PAD + CARD_W/2, cardY + CARD_H/2);
+        ctx.rotate(Math.PI);
+        ctx.drawImage(img, -CARD_W/2, -CARD_H/2, CARD_W, CARD_H);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, PAD, cardY, CARD_W, CARD_H);
+      }
+
+      let ty = y;
+      ctx.fillStyle = '#d97757';
+      ctx.font = '13px "Noto Serif SC", serif';
+      ctx.fillText(item.position.toUpperCase(), TEXT_X, ty + 14);
+      ty += 18;
+
+      ctx.fillStyle = '#faf9f5';
+      ctx.font = '500 16px "Noto Serif SC", serif';
+      ctx.fillText(item.cardName, TEXT_X, ty + 16);
+      ty += 22;
+
+      if(item.reversed){
+        ctx.fillStyle = '#b0aea5';
+        ctx.font = 'italic 14px "Noto Serif SC", serif';
+        ctx.fillText('逆位能量向内转化，这是一个向内探索的邀请。', TEXT_X, ty + 14);
+        ty += 22;
+        ctx.fillStyle = '#d97757';
+        ctx.font = '11px "Noto Serif SC", serif';
+        ctx.fillText('✦ 逆位 Reversed', TEXT_X, ty + 11);
+        ty += 18;
+      }
+
+      ctx.fillStyle = '#b0aea5';
+      ctx.font = '15px "Noto Serif SC", serif';
+      wrapText(ctx, item.meaning, TEXT_X, ty + 15, TEXT_W, LINE);
+
+      y += blockH + GAP;
+    });
+
+    await new Promise((resolve, reject)=>{
+      canvas.toBlob(blob=>{
+        if(!blob){ reject(new Error('Export failed')); return; }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tarot-${sp.label}-${ts}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        resolve();
+      }, 'image/png');
+    });
+  }catch(err){
+    console.error(err);
+    alert('导出失败，请确认牌面图片已加载完整后重试。');
+  }finally{
+    ebtn.textContent = origText;
+    ebtn.disabled = false;
+  }
 }
 
 // ── Event handlers ──
@@ -928,6 +1157,7 @@ document.getElementById('xbtn').addEventListener('click',()=>{
 });
 
 document.getElementById('rbtn').addEventListener('click',()=>{ if(drawn.length) openPanel(0); });
+document.getElementById('ebtn').addEventListener('click', exportReadingAsPNG);
 // Prevent panel touch events from bubbling to canvas touchstart/touchend
 document.getElementById('panel').addEventListener('touchstart', e=>e.stopPropagation(), {passive:true});
 document.getElementById('panel').addEventListener('touchend', e=>e.stopPropagation(), {passive:false});
