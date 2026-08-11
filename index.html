@@ -951,7 +951,7 @@ function openPanel(start){
   <div class="rcn">${item.cardName}</div>
   <div class="rcm">
     ${item.reversed
-      ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:11px;letter-spacing:.1em">✦ 逆位 Reversed</span><br>${item.meaning}`
+      ? `<span style="color:var(--or);font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:.1em">✦ 逆位 Reversed</span><br>${item.meaning}`
       : item.meaning
     }
   </div>
@@ -1029,7 +1029,7 @@ function measureItemBlockHeight(ctx, item, textW, lineHeight, cardH){
   h += 18;
   ctx.font = '500 16px "Noto Serif SC", serif';
   h += 22;
-  if(item.reversed) h += 18;
+  if(item.reversed) h += 22;
   ctx.font = '15px "Noto Serif SC", serif';
   h += measureWrapHeight(ctx, item.meaning, textW, lineHeight);
   return Math.max(h, cardH);
@@ -1130,9 +1130,9 @@ async function exportReadingAsPNG(){
 
       if(item.reversed){
         ctx.fillStyle = '#d97757';
-        ctx.font = '11px "Noto Serif SC", serif';
-        ctx.fillText('✦ 逆位 Reversed', TEXT_X, ty + 11);
-        ty += 18;
+        ctx.font = '15px "Noto Serif SC", serif';
+        ctx.fillText('✦ 逆位 Reversed', TEXT_X, ty + 14);
+        ty += 22;
       }
 
       ctx.fillStyle = '#b0aea5';
