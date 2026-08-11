@@ -172,12 +172,13 @@ html,body{
   padding-bottom:calc(14px + env(safe-area-inset-bottom));
   padding-left:calc(28px + env(safe-area-inset-left));
   padding-right:calc(28px + env(safe-area-inset-right));
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  display:flex;align-items:center;gap:10px;
 }
 .info .desc{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;white-space:nowrap;overflow:hidden}
 .info .cnt{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--dim);letter-spacing:.1em;margin-top:3px;white-space:nowrap}
-.info{flex:1;min-width:0}
+.info{flex:1;min-width:0;margin-right:auto}
 .info.hidden{display:none}
+.bot-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
 
 .btn-p{
   font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:.15em;
@@ -269,6 +270,7 @@ html,body{
 
 @media (orientation:landscape) and (max-height:520px){
   #bot{flex-wrap:nowrap;padding:8px 14px 10px;gap:8px}
+  .bot-actions{gap:8px;flex-wrap:nowrap}
   .btn-p{font-size:13px;padding:9px 10px}
   .btn-s{font-size:13px;padding:8px 10px}
 }
@@ -332,11 +334,13 @@ html,body{
       <div class="desc" id="desc">专注当下，抽取你的命运之牌</div>
       <div class="cnt" id="cnt">1 张牌 · 单张</div>
     </div>
-    <button class="btn-p" id="dbtn">✦ 抽牌</button>
-    <button class="btn-p" id="fnbtn" style="display:none">翻开下一张 ✦</button>
-    <button class="btn-s" id="rbtn">解读 ✦</button>
-    <button class="btn-s" id="ebtn" style="display:none">导出 ✦</button>
-    <button class="btn-s" id="xbtn">重置</button>
+    <div class="bot-actions">
+      <button class="btn-p" id="dbtn">✦ 抽牌</button>
+      <button class="btn-p" id="fnbtn" style="display:none">翻开下一张 ✦</button>
+      <button class="btn-s" id="rbtn">解读 ✦</button>
+      <button class="btn-s" id="ebtn" style="display:none">导出 ✦</button>
+      <button class="btn-s" id="xbtn">重置</button>
+    </div>
   </div>
 
 </div>
@@ -899,15 +903,21 @@ function updateBotInfoVisibility(){
   const bot = document.getElementById('bot');
   const info = bot.querySelector('.info');
   const desc = document.getElementById('desc');
+  const actions = bot.querySelector('.bot-actions');
   if(!info || !desc) return;
 
   info.classList.remove('hidden');
   const descOverflow = desc.scrollWidth > desc.clientWidth + 1;
-  const buttons = [...bot.querySelectorAll('button')];
-  const firstTop = buttons[0]?.offsetTop ?? 0;
-  const wrapped = buttons.some(b => b.offsetTop > firstTop + 1);
 
-  if(descOverflow || wrapped) info.classList.add('hidden');
+  const visibleButtons = actions
+    ? [...actions.querySelectorAll('button')].filter(b => b.offsetHeight > 0)
+    : [];
+  const firstTop = visibleButtons[0]?.offsetTop ?? 0;
+  const wrapped = visibleButtons.length > 1 &&
+    visibleButtons.some(b => b.offsetTop > firstTop + 1);
+  const willHide = descOverflow || wrapped;
+
+  if(willHide) info.classList.add('hidden');
 }
 
 function syncBotBar(){
