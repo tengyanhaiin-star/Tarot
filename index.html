@@ -175,7 +175,9 @@ html,body{
   display:flex;align-items:center;gap:10px;
 }
 .info .desc{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;white-space:nowrap;overflow:hidden}
-.info .cnt{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--dim);letter-spacing:.1em;margin-top:3px;white-space:nowrap}
+.info .cnt{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--dim);letter-spacing:.1em;margin-top:3px;white-space:nowrap;overflow:hidden}
+.info .desc.hidden,.info .cnt.hidden{display:none}
+.info .desc.hidden + .cnt{margin-top:0}
 .info{flex:1;min-width:0;margin-right:auto}
 .info.hidden{display:none}
 .bot-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
@@ -903,11 +905,13 @@ function updateBotInfoVisibility(){
   const bot = document.getElementById('bot');
   const info = bot.querySelector('.info');
   const desc = document.getElementById('desc');
+  const cnt = document.getElementById('cnt');
   const actions = bot.querySelector('.bot-actions');
-  if(!info || !desc) return;
+  if(!info || !desc || !cnt) return;
 
   info.classList.remove('hidden');
-  const descOverflow = desc.scrollWidth > desc.clientWidth + 1;
+  desc.classList.remove('hidden');
+  cnt.classList.remove('hidden');
 
   const visibleButtons = actions
     ? [...actions.querySelectorAll('button')].filter(b => b.offsetHeight > 0)
@@ -915,9 +919,17 @@ function updateBotInfoVisibility(){
   const firstTop = visibleButtons[0]?.offsetTop ?? 0;
   const wrapped = visibleButtons.length > 1 &&
     visibleButtons.some(b => b.offsetTop > firstTop + 1);
-  const willHide = descOverflow || wrapped;
 
-  if(willHide) info.classList.add('hidden');
+  if(wrapped){
+    info.classList.add('hidden');
+    return;
+  }
+
+  if(desc.scrollWidth > desc.clientWidth + 1) desc.classList.add('hidden');
+  if(cnt.scrollWidth > cnt.clientWidth + 1) cnt.classList.add('hidden');
+  if(desc.classList.contains('hidden') && cnt.classList.contains('hidden')){
+    info.classList.add('hidden');
+  }
 }
 
 function syncBotBar(){
