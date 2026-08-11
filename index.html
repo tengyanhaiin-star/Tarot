@@ -97,6 +97,7 @@ html,body{
 #empty p{
   font-family:'Noto Serif SC',serif;font-size:15px;
   color:var(--dim);letter-spacing:.16em;
+  max-width:min(90%,420px);text-align:center;line-height:1.65;
 }
 
 /* ── CARD SLOTS ── */
@@ -173,9 +174,10 @@ html,body{
   padding-right:calc(28px + env(safe-area-inset-right));
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
 }
-.info .desc{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic}
-.info .cnt{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--dim);letter-spacing:.1em;margin-top:3px}
-.info{flex:1;min-width:90px}
+.info .desc{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--md);font-style:italic;white-space:nowrap;overflow:hidden}
+.info .cnt{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--dim);letter-spacing:.1em;margin-top:3px;white-space:nowrap}
+.info{flex:1;min-width:0}
+.info.hidden{display:none}
 
 .btn-p{
   font-family:'Noto Serif SC',serif;font-size:15px;letter-spacing:.15em;
@@ -265,6 +267,12 @@ html,body{
   .rcm{font-size:13px}
 }
 
+@media (orientation:landscape) and (max-height:520px){
+  #bot{flex-wrap:nowrap;padding:8px 14px 10px;gap:8px}
+  .btn-p{font-size:13px;padding:9px 10px}
+  .btn-s{font-size:13px;padding:8px 10px}
+}
+
 
 .rc{
   display:flex;gap:14px;align-items:flex-start;
@@ -289,7 +297,7 @@ html,body{
   <div id="hdr">
     <div style="display:flex;align-items:baseline">
       <h1>TAROT</h1>
-      <span class="sub">古老智慧在此流动，静心感受。</span>
+      <span class="sub">选择牌阵，抽取命运之牌</span>
     </div>
     <span class="badge">78-card tarot simulator</span>
   </div>
@@ -308,7 +316,7 @@ html,body{
     <div id="canvas"></div>
     <div id="empty">
       <div class="ic">✦</div>
-      <p>选择牌阵，抽取命运之牌</p>
+      <p id="empty-desc">专注当下，抽取你的命运之牌</p>
     </div>
     <div id="panel">
       <div id="ph">
@@ -649,7 +657,7 @@ function render(){
     empty.style.display='flex';
     document.getElementById('dbtn').style.display = '';
     document.getElementById('fnbtn').style.display = 'none';
-    updateExportButton();
+    syncBotBar();
     return;
   }
   empty.style.display = 'none';
@@ -764,7 +772,7 @@ function render(){
       fnbtn.textContent = '✦ 再次抽牌';
       document.getElementById('desc').textContent = SPREADS[curSp].desc;
     }
-    updateExportButton();
+    syncBotBar();
   }
 
   // wire up the flip-next / redraw button (unbind previous listener first)
@@ -857,7 +865,7 @@ function render(){
     if(touchTargetEl){ handleCanvasTap(touchTargetEl); touchTargetEl = null; }
   }, {passive: false});
 
-  updateExportButton();
+  syncBotBar();
 }
 
 function getReadingItems(){
@@ -880,6 +888,31 @@ function updateExportButton(){
   const ebtn = document.getElementById('ebtn');
   if(!ebtn) return;
   ebtn.style.display = isReadingComplete() ? '' : 'none';
+}
+
+function updateEmptyDesc(){
+  const el = document.getElementById('empty-desc');
+  if(el) el.textContent = SPREADS[curSp].desc;
+}
+
+function updateBotInfoVisibility(){
+  const bot = document.getElementById('bot');
+  const info = bot.querySelector('.info');
+  const desc = document.getElementById('desc');
+  if(!info || !desc) return;
+
+  info.classList.remove('hidden');
+  const descOverflow = desc.scrollWidth > desc.clientWidth + 1;
+  const buttons = [...bot.querySelectorAll('button')];
+  const firstTop = buttons[0]?.offsetTop ?? 0;
+  const wrapped = buttons.some(b => b.offsetTop > firstTop + 1);
+
+  if(descOverflow || wrapped) info.classList.add('hidden');
+}
+
+function syncBotBar(){
+  updateExportButton();
+  updateBotInfoVisibility();
 }
 
 function openPanel(start){
@@ -1125,6 +1158,7 @@ document.querySelectorAll('.tb').forEach(b=>{
     const sp = SPREADS[curSp];
     document.getElementById('desc').textContent = sp.desc;
     document.getElementById('cnt').textContent  = `${sp.cnt} 张牌 · ${sp.label}`;
+    updateEmptyDesc();
     drawn=[];
     flippedCount=0;
     document.getElementById('panel').classList.remove('open');
@@ -1169,11 +1203,14 @@ document.getElementById('clo').addEventListener('click',()=>{
 // ── Resize: re-render if cards visible ──
 new ResizeObserver(()=>{ if(drawn.length) render(); })
   .observe(document.getElementById('stage'));
+new ResizeObserver(()=>syncBotBar()).observe(document.getElementById('bot'));
 
 // ── Init ──
 const sp0 = SPREADS[curSp];
 document.getElementById('desc').textContent = sp0.desc;
 document.getElementById('cnt').textContent  = `${sp0.cnt} 张牌 · ${sp0.label}`;
+updateEmptyDesc();
+syncBotBar();
 </script>
 </body>
 </html>
