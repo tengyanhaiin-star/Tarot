@@ -1059,7 +1059,7 @@ async function exportReadingAsPNG(){
     const sp = SPREADS[curSp];
     const images = await Promise.all(items.map(item=>loadImage(cardFilename(item.card))));
 
-    const W = 500, PAD = 40, CARD_W = 100;
+    const W = 450, PAD = 40, CARD_W = 100;
     const CARD_H = Math.round(CARD_W * (483/252));
     const GAP = 24;
     const TEXT_X = PAD + CARD_W + 20;
