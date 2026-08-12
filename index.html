@@ -346,6 +346,13 @@ html,body{
 
 </div>
 <div id="card-preview"></div>
+<script src="pos-readings-axis.js"></script>
+<script src="pos-readings-hope.js"></script>
+<script src="pos-readings-act.js"></script>
+<script src="pos-readings-challenge.js"></script>
+<script src="pos-readings-outcome.js"></script>
+<script src="pos-readings-external.js"></script>
+<script src="pos-readings-bond.js"></script>
 <script>
 /* ── STARS ── */
 (function(){
@@ -587,6 +594,40 @@ const SPREADS={
       {l:'过去',x:-1,y:.5,r:0},{l:'未来',x:1,y:.5,r:0}
     ]}
 };
+
+const LABEL_CLASS={
+  'Your Message':'generic','过去':'generic','现在':'generic','未来':'generic','当下':'generic',
+  '你':'generic','Ta':'generic',
+  '上方':'axis','下方':'axis','隐藏':'axis','灵 Spirit':'axis',
+  '希望':'hope','指引':'hope','火 Fire':'hope','土 Earth':'hope','水 Water':'hope','风 Air':'hope',
+  '建议':'act','行动':'act',
+  '挑战':'challenge','结果':'outcome','外部':'external','连结':'bond'
+};
+
+const POS_READINGS={
+  axis:POS_READINGS_AXIS,
+  hope:POS_READINGS_HOPE,
+  act:POS_READINGS_ACT,
+  challenge:POS_READINGS_CHALLENGE,
+  outcome:POS_READINGS_OUTCOME,
+  external:POS_READINGS_EXTERNAL,
+  bond:POS_READINGS_BOND
+};
+
+function lookupPosReading(store,card){
+  if(card.type==='major') return store.major[card.id];
+  return store.minor[card.suit][card.rank];
+}
+
+function composeMeaning(card,positionLabel){
+  const cls=LABEL_CLASS[positionLabel]||'generic';
+  if(cls==='generic') return card._rv?card.r:card.m;
+  const store=POS_READINGS[cls];
+  if(!store) return card._rv?card.r:card.m;
+  const reading=lookupPosReading(store,card);
+  if(!reading) return card._rv?card.r:card.m;
+  return card._rv?reading.r:reading.m;
+}
 
 let curSp='single', drawn=[], flippedCount=0, shuffledDeck=[];
 
@@ -879,7 +920,7 @@ function getReadingItems(){
     position: sp.pos[i].l,
     cardName: card.type === 'major' ? card.name + ' · ' + card.eng : card.name,
     reversed: !!card._rv,
-    meaning: card._rv ? card.r : card.m,
+    meaning: composeMeaning(card, sp.pos[i].l),
     card
   }));
 }
