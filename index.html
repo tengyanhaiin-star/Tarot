@@ -614,7 +614,19 @@ const POS_READINGS={
   bond:POS_READINGS_BOND
 };
 
-function lookupPosReading(store,card){
+const PENTAGRAM_ELEMENT_SUIT={
+  '火 Fire':'wands',
+  '土 Earth':'pentacles',
+  '水 Water':'cups',
+  '风 Air':'swords'
+};
+
+function lookupPosReading(store,card,positionLabel){
+  const hopeSuit=PENTAGRAM_ELEMENT_SUIT[positionLabel];
+  if(hopeSuit&&store===POS_READINGS.hope){
+    if(card.type==='major') return store.major[card.id];
+    return store.minor[hopeSuit][card.rank];
+  }
   if(card.type==='major') return store.major[card.id];
   return store.minor[card.suit][card.rank];
 }
@@ -624,7 +636,7 @@ function composeMeaning(card,positionLabel){
   if(cls==='generic') return card._rv?card.r:card.m;
   const store=POS_READINGS[cls];
   if(!store) return card._rv?card.r:card.m;
-  const reading=lookupPosReading(store,card);
+  const reading=lookupPosReading(store,card,positionLabel);
   if(!reading) return card._rv?card.r:card.m;
   return card._rv?reading.r:reading.m;
 }
