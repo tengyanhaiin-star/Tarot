@@ -1042,10 +1042,10 @@ function loadImage(src){
 }
 
 function isLineStartForbidden(ch){
-  return /[，。、；：？！…—·）】》」』"'％)\]},.!?;:]/.test(ch);
+  return /[，。、；：？！…—·）】》」』"'％)\]},.!?;:/]/.test(ch);
 }
 function isLineEndForbidden(ch){
-  return /[（【《「『"'([<{]/.test(ch);
+  return /[（【《「『"'([<{/]/.test(ch);
 }
 
 function splitTextLines(ctx, text, maxWidth){
