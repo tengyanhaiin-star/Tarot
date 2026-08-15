@@ -614,19 +614,7 @@ const POS_READINGS={
   bond:POS_READINGS_BOND
 };
 
-const PENTAGRAM_ELEMENT_SUIT={
-  '火 Fire':'wands',
-  '土 Earth':'pentacles',
-  '水 Water':'cups',
-  '风 Air':'swords'
-};
-
 function lookupPosReading(store,card,positionLabel){
-  const hopeSuit=PENTAGRAM_ELEMENT_SUIT[positionLabel];
-  if(hopeSuit&&store===POS_READINGS.hope){
-    if(card.type==='major') return store.major[card.id];
-    return store.minor[hopeSuit][card.rank];
-  }
   if(card.type==='major') return store.major[card.id];
   return store.minor[card.suit][card.rank];
 }
@@ -642,6 +630,33 @@ function composeMeaning(card,positionLabel){
 }
 
 let curSp='single', drawn=[], flippedCount=0, shuffledDeck=[];
+
+const PENTAGRAM_POOL={
+  '灵 Spirit':()=>DECK.filter(c=>c.type==='major'),
+  '火 Fire':()=>DECK.filter(c=>c.suit==='wands'),
+  '土 Earth':()=>DECK.filter(c=>c.suit==='pentacles'),
+  '水 Water':()=>DECK.filter(c=>c.suit==='cups'),
+  '风 Air':()=>DECK.filter(c=>c.suit==='swords')
+};
+
+function drawCardWithReversal(card){
+  return {...card,_rv:Math.random()<.5};
+}
+
+function drawSpread(sp){
+  if(curSp==='star'){
+    return sp.pos.map(p=>{
+  const poolFn=PENTAGRAM_POOL[p.l];
+      if(!poolFn) throw new Error('Invalid pentagram pool: '+p.l);
+      const pool=poolFn();
+      if(!pool.length) throw new Error('Empty pentagram pool: '+p.l);
+      const pick=pool[0|Math.random()*pool.length];
+      return drawCardWithReversal(pick);
+    });
+  }
+  shuffledDeck=shuffle(DECK);
+  return shuffledDeck.slice(0,sp.cnt).map(drawCardWithReversal);
+}
 
 function shuffle(a){
   const b=[...a];
@@ -1260,8 +1275,7 @@ document.querySelectorAll('.tb').forEach(b=>{
 document.getElementById('dbtn').addEventListener('click',()=>{
   document.getElementById('panel').classList.remove('open');
   const sp = SPREADS[curSp];
-  shuffledDeck = shuffle(DECK);
-  drawn = shuffledDeck.slice(0,sp.cnt).map(c=>({...c,_rv:Math.random()<.5}));
+  drawn=drawSpread(sp);
   flippedCount = 0;
   document.getElementById('dbtn').style.display = 'none';
   render();
